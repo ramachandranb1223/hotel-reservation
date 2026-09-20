@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | Grand Luxe Hotel & Resort{% endblock %}
+
+{% block content %}
+<section style="padding: 80px 0; min-height: 70vh; display:flex; align-items:center;">
+    <div class="container" style="max-width: 480px;">
+        <div style="background:white; border-radius:var(--radius-xl); padding:40px; box-shadow:var(--shadow-xl); border:1px solid var(--color-border);">
+            <div class="text-center" style="margin-bottom:28px;">
+                <div class="logo-crown" style="margin:0 auto 12px;">♔</div>
+                <h2 style="font-size:1.8rem; margin-bottom:6px;">Guest & Staff Portal</h2>
+                <p style="color:var(--color-text-muted); font-size:0.9rem;">Sign in to access your bookings and hotel controls.</p>
+            </div>
+
+            <!-- Demo Credentials Quick-Fill (Crucial for Viva Demonstrations!) -->
+            <div style="background:#f8fafc; border:1px solid rgba(197, 160, 89, 0.4); border-radius:var(--radius-md); padding:12px 16px; margin-bottom:24px;">
+                <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--color-accent-hover); margin-bottom:8px; letter-spacing:1px;">
+                    Demo Accounts (1-Click Fill)
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn btn-outline btn-sm" style="flex:1;" onclick="fillDemo('admin@grandluxe.com', 'admin123')">
+                        👑 Admin Demo
+                    </button>
+                    <button type="button" class="btn btn-dark btn-sm" style="flex:1;" onclick="fillDemo('alice@example.com', 'password123')">
+                        👤 Customer Demo
+                    </button>
+                </div>
+            </div>
+
+            <form id="login-form">
+                <div class="input-group" style="margin-bottom:18px;">
+                    <label for="login-email">Email Address</label>
+                    <input type="email" id="login-email" class="input-control" placeholder="name@example.com" required />
+                </div>
+
+                <div class="input-group" style="margin-bottom:24px;">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="input-control" placeholder="••••••••" required />
+                </div>
+
+                <button type="submit" id="login-btn" class="btn btn-primary" style="width:100%; height:48px;">
+                    Sign In
+                </button>
+            </form>
+
+            <div style="text-align:center; margin-top:24px; font-size:0.9rem; color:var(--color-text-muted);">
+                Don't have an account yet? <a href="/register" style="color:var(--color-accent-hover); font-weight:700;">Create guest account</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function fillDemo(email, pwd) {
+        document.getElementById('login-email').value = email;
+        document.getElementById('login-password').value = pwd;
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('login-btn');
+        btn.disabled = true;
+        btn.textContent = 'Authenticating...';
+
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        try {
+            const resp = await apiRequest('/api/auth/login', {
+                method: 'POST',
+                body: { email, password }
+            });
+
+            showToast(resp.message, 'success');
+            setTimeout(() => {
+                if (resp.user.role === 'ADMIN') {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    window.location.href = '/my-bookings';
+                }
+            }, 800);
+        } catch (err) {
+            showToast(err.message, 'error');
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        }
+    });
+</script>
+{% endblock %}

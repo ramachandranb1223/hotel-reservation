@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Hospitality Services Management | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <div class="sidebar-title">Hotel Control Center</div>
+        <ul class="admin-menu">
+            <li class="admin-menu-item"><a href="/admin/dashboard">📊 Dashboard KPIs</a></li>
+            <li class="admin-menu-item"><a href="/admin/rooms">🏨 Rooms & Suites</a></li>
+            <li class="admin-menu-item"><a href="/admin/bookings">📅 Reservations</a></li>
+            <li class="admin-menu-item"><a href="/admin/customers">👥 Guest Profiles</a></li>
+            <li class="admin-menu-item active"><a href="/admin/services">🛎️ Hotel Services</a></li>
+            <li class="admin-menu-item"><a href="/admin/reports">📈 Reports & Views</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+            <div>
+                <h1 style="font-size:2rem; margin-bottom:4px;">Ancillary Hotel Services</h1>
+                <p style="color:var(--color-text-muted); font-size:0.95rem;">Catalog of guest amenities and VIP experiences.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('add-service-modal')">+ Add New Service</button>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <h3>Hotel Services (Table: SERVICE)</h3>
+                <span class="badge badge-available">M:N with BOOKING via BOOKING_SERVICE</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Service ID</th>
+                            <th>Service Title</th>
+                            <th>Category</th>
+                            <th>Unit Price (USD)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-services-tbody">
+                        <tr>
+                            <td colspan="5" style="text-align:center; padding:32px;">Loading services catalog...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Add Service Modal -->
+<div id="add-service-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">Add Ancillary Hotel Service</h3>
+            <button class="modal-close" onclick="closeModal('add-service-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="add-service-form">
+                <div class="input-group" style="margin-bottom:16px;">
+                    <label for="new-service-name">Service Name *</label>
+                    <input type="text" id="new-service-name" class="input-control" placeholder="e.g. Scuba Diving Guided Tour" required />
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+                    <div class="input-group">
+                        <label for="new-service-category">Category *</label>
+                        <select id="new-service-category" class="input-control">
+                            <option value="DINING">DINING</option>
+                            <option value="SPA">SPA</option>
+                            <option value="TRANSPORT">TRANSPORT</option>
+                            <option value="WELLNESS">WELLNESS</option>
+                            <option value="EXPERIENCE">EXPERIENCE</option>
+                            <option value="LAUNDRY">LAUNDRY</option>
+                            <option value="BUSINESS">BUSINESS</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="new-service-price">Unit Price (USD) *</label>
+                        <input type="number" step="0.01" id="new-service-price" class="input-control" value="95.00" required />
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;">Insert Service</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+<script>
+    async function loadServices() {
+        const tbody = document.getElementById('admin-services-tbody');
+        try {
+            const resp = await apiRequest('/api/services');
+            const services = resp.services;
+            let html = '';
+            services.forEach(s => {
+                const sid = s.service_id || s.Service_ID;
+                const name = s.service_name || s.Service_Name;
+                const cat = s.category || s.Category;
+                const price = s.price || s.Price;
+
+                html += `
+                    <tr>
+                        <td><strong>SRV-${sid}</strong></td>
+                        <td><strong>${name}</strong></td>
+                        <td><span class="amenity-pill">${cat}</span></td>
+                        <td><strong>$${Number(price).toFixed(2)}</strong></td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="deleteService(${sid})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="5" style="color:var(--color-danger); text-align:center; padding:24px;">Failed to load services: ${err.message}</td></tr>`;
+        }
+    }
+
+    async function deleteService(id) {
+        if (!confirm('Are you sure you want to remove this service?')) return;
+        try {
+            const resp = await apiRequest(`/api/admin/services/${id}`, { method: 'DELETE' });
+            showToast(resp.message, 'success');
+            loadServices();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+
+    document.getElementById('add-service-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const resp = await apiRequest('/api/admin/services', {
+                method: 'POST',
+                body: {
+                    service_name: document.getElementById('new-service-name').value,
+                    category: document.getElementById('new-service-category').value,
+                    price: document.getElementById('new-service-price').value
+                }
+            });
+            showToast(resp.message, 'success');
+            closeModal('add-service-modal');
+            loadServices();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadServices);
+</script>
+{% endblock %}

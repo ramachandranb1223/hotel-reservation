@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Analytical Reports & SQL Showcase | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <div class="sidebar-title">Hotel Control Center</div>
+        <ul class="admin-menu">
+            <li class="admin-menu-item"><a href="/admin/dashboard">📊 Dashboard KPIs</a></li>
+            <li class="admin-menu-item"><a href="/admin/rooms">🏨 Rooms & Suites</a></li>
+            <li class="admin-menu-item"><a href="/admin/bookings">📅 Reservations</a></li>
+            <li class="admin-menu-item"><a href="/admin/customers">👥 Guest Profiles</a></li>
+            <li class="admin-menu-item"><a href="/admin/services">🛎️ Hotel Services</a></li>
+            <li class="admin-menu-item active"><a href="/admin/reports">📈 Reports & Views</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+            <div>
+                <h1 style="font-size:2rem; margin-bottom:4px;">Academic Reports & SQL Verification</h1>
+                <p style="color:var(--color-text-muted); font-size:0.95rem;">Demonstrate Oracle SQL views, joins, aggregates, and subqueries required for DA2 evaluation.</p>
+            </div>
+        </div>
+
+        <!-- Report Selector Tabs -->
+        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:32px;">
+            <button class="btn btn-primary btn-sm" onclick="loadReport('monthly-revenue')">
+                📅 Monthly Revenue View
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="loadReport('popular-rooms')">
+                🏨 Most Booked Room Types
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="loadReport('service-usage')">
+                🛎️ Service Usage (Junction M:N)
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="loadReport('top-customers')">
+                🏆 VIP Customer Leaderboard
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="loadReport('occupancy-rates')">
+                📊 Room Occupancy Summary
+            </button>
+        </div>
+
+        <!-- Render Target Container -->
+        <div id="report-results-container">
+            <!-- Dynamically populated by admin.js -->
+        </div>
+
+        <!-- Viva & Technical Demonstration Box -->
+        <div style="background:white; border-radius:var(--radius-lg); padding:32px; border:1px solid var(--color-border); margin-top:40px;">
+            <div class="section-tag">Viva Defense Reference</div>
+            <h3 style="margin-bottom:12px;">Underlying Oracle Database Objects</h3>
+            <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:20px;">
+                The analytical reports above execute against pre-compiled Oracle views and parameterized aggregation queries.
+            </p>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; font-size:0.85rem;">
+                <div style="background:#f8fafc; padding:16px; border-radius:var(--radius-md); border-left:3px solid var(--color-accent);">
+                    <strong style="color:var(--color-primary); display:block; margin-bottom:6px;">VW_MONTHLY_REVENUE_REPORT</strong>
+                    <code style="display:block; color:#475569; font-size:0.8rem;">
+                        SELECT TO_CHAR(b.Check_In_Date, 'YYYY-MM') AS Booking_Month, rt.Type_Name, COUNT(b.Booking_ID), SUM(b.Total_Amount)
+                        FROM BOOKING b JOIN ROOM r ON b.Room_ID = r.Room_ID ... GROUP BY ...
+                    </code>
+                </div>
+
+                <div style="background:#f8fafc; padding:16px; border-radius:var(--radius-md); border-left:3px solid var(--color-accent);">
+                    <strong style="color:var(--color-primary); display:block; margin-bottom:6px;">VW_ROOM_OCCUPANCY_SUMMARY</strong>
+                    <code style="display:block; color:#475569; font-size:0.8rem;">
+                        SELECT rt.Type_Name, COUNT(r.Room_ID), SUM(CASE WHEN r.Status='AVAILABLE' THEN 1 ELSE 0 END), ...
+                        FROM ROOM_TYPE rt LEFT JOIN ROOM r ON rt.RoomType_ID = r.RoomType_ID GROUP BY ...
+                    </code>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadReport('monthly-revenue');
+    });
+</script>
+{% endblock %}

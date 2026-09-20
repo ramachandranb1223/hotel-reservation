@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Executive Management Dashboard | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-title">Hotel Control Center</div>
+        <ul class="admin-menu">
+            <li class="admin-menu-item active"><a href="/admin/dashboard">📊 Dashboard KPIs</a></li>
+            <li class="admin-menu-item"><a href="/admin/rooms">🏨 Rooms & Suites</a></li>
+            <li class="admin-menu-item"><a href="/admin/bookings">📅 Reservations</a></li>
+            <li class="admin-menu-item"><a href="/admin/customers">👥 Guest Profiles</a></li>
+            <li class="admin-menu-item"><a href="/admin/services">🛎️ Hotel Services</a></li>
+            <li class="admin-menu-item"><a href="/admin/reports">📈 Reports & Views</a></li>
+        </ul>
+        <div style="padding: 24px; margin-top:40px; font-size:0.8rem; color:#64748b; border-top:1px solid rgba(255,255,255,0.08);">
+            Logged in as <strong>Administrator</strong><br/>
+            <span style="color:var(--color-accent);">Database Systems DA2</span>
+        </div>
+    </aside>
+
+    <!-- Admin Main Body -->
+    <main class="admin-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+            <div>
+                <h1 style="font-size:2rem; margin-bottom:4px;">Executive Hotel Overview</h1>
+                <p style="color:var(--color-text-muted); font-size:0.95rem;">Real-time KPIs aggregated from Oracle Database tables and views.</p>
+            </div>
+            <div style="display:flex; gap:12px;">
+                <a href="/admin/bookings" class="btn btn-dark btn-sm">Manage Bookings</a>
+                <a href="/admin/reports" class="btn btn-primary btn-sm">Run Analytics</a>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Gross Revenue Collected</div>
+                <div class="kpi-value" id="kpi-total-revenue" style="color:var(--color-accent-hover);">$0.00</div>
+                <div class="kpi-subtitle">From completed bookings</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Total Reservations</div>
+                <div class="kpi-value" id="kpi-total-bookings">0</div>
+                <div class="kpi-subtitle"><span id="kpi-active-stays">0</span> active stays in-house</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Physical Room Inventory</div>
+                <div class="kpi-value" id="kpi-total-rooms">20</div>
+                <div class="kpi-subtitle">
+                    <span style="color:var(--color-success); font-weight:700;" id="kpi-available-rooms">0</span> available • 
+                    <span style="color:var(--color-danger); font-weight:700;" id="kpi-occupied-rooms">0</span> occupied
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Registered Guests</div>
+                <div class="kpi-value" id="kpi-total-customers">0</div>
+                <div class="kpi-subtitle">Customer accounts</div>
+            </div>
+        </div>
+
+        <!-- Recent Reservations Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <div>
+                    <h3 style="font-size:1.2rem; margin-bottom:2px;">Recent Reservations</h3>
+                    <p style="font-size:0.85rem; color:var(--color-text-muted);">Latest booking requests recorded in the system.</p>
+                </div>
+                <a href="/admin/bookings" class="btn btn-outline btn-sm">View All Bookings</a>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Guest Name</th>
+                            <th>Room</th>
+                            <th>Stay Period</th>
+                            <th>Total Rate</th>
+                            <th>Status</th>
+                            <th>Folio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-bookings-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:32px;">Loading recent bookings...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', initAdminDashboard);
+</script>
+{% endblock %}

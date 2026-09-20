@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Rooms & Luxury Suites | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<section style="background: linear-gradient(rgba(11, 19, 43, 0.85), rgba(11, 19, 43, 0.95)), url('https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1920&q=80') center/cover; padding: 60px 0; color: white;">
+    <div class="container text-center">
+        <div class="section-tag">Inventory & Availability</div>
+        <h1 class="section-title" style="color:white;">Suites, Rooms & Private Villas</h1>
+        <p class="section-desc" style="color:#cbd5e1; margin-bottom:0;">Browse all 20 rooms across 4 floors, filter by suite category or test live availability with dates.</p>
+    </div>
+</section>
+
+<!-- Search and Filter Bar -->
+<section style="background:white; border-bottom:1px solid var(--color-border); padding:24px 0;">
+    <div class="container">
+        <form id="booking-search-form" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto; gap:16px; align-items:end;">
+            <div class="input-group">
+                <label for="search-checkin">Check-In</label>
+                <input type="date" id="search-checkin" class="input-control" required />
+            </div>
+
+            <div class="input-group">
+                <label for="search-checkout">Check-Out</label>
+                <input type="date" id="search-checkout" class="input-control" required />
+            </div>
+
+            <div class="input-group">
+                <label for="search-guests">Guests</label>
+                <select id="search-guests" class="input-control">
+                    <option value="1">1 Guest</option>
+                    <option value="2" selected>2 Guests</option>
+                    <option value="3">3 Guests</option>
+                    <option value="4">4 Guests</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="search-roomtype">Category</label>
+                <select id="search-roomtype" class="input-control">
+                    <option value="">All Categories</option>
+                    {% for rt in room_types %}
+                        <option value="{{ rt.roomtype_id or rt.RoomType_ID }}">{{ rt.type_name or rt.Type_Name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="height:48px;">
+                Filter Available
+            </button>
+        </form>
+    </div>
+</section>
+
+<!-- Results / Rooms Grid -->
+<section style="padding: 60px 0;">
+    <div class="container">
+        <div id="search-results-container">
+            <!-- Rendered by JS, default preloaded -->
+            <div style="text-align:center; padding:32px;">
+                <p>Loading rooms catalog...</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        executeRoomSearch();
+    });
+</script>
+{% endblock %}

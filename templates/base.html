@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Grand Luxe Hotel & Resort | Smart Reservation System{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Luxury Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="brand-logo">
+                <div class="logo-crown">♔</div>
+                <div class="brand-text">GRAND <span>LUXE</span></div>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a></li>
+                <li><a href="/rooms" class="nav-link {% if request.path == '/rooms' %}active{% endif %}">Suites & Rooms</a></li>
+                <li><a href="/booking" class="nav-link {% if request.path == '/booking' %}active{% endif %}">Reservations</a></li>
+                {% if current_user %}
+                    <li><a href="/my-bookings" class="nav-link {% if request.path == '/my-bookings' %}active{% endif %}">My Bookings</a></li>
+                    {% if is_admin %}
+                        <li><a href="/admin/dashboard" class="nav-link {% if '/admin' in request.path %}active{% endif %}" style="color:var(--color-accent); font-weight:700;">★ Admin Portal</a></li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+
+            <div class="nav-actions">
+                {% if current_user %}
+                    <div class="user-badge">
+                        <div class="user-avatar-circle">{{ current_user.name[0] }}</div>
+                        <span>{{ current_user.name }}</span>
+                    </div>
+                    <a href="/api/auth/logout" class="btn btn-outline btn-sm">Log Out</a>
+                {% else %}
+                    <a href="/login" class="btn btn-outline btn-sm">Sign In</a>
+                    <a href="/register" class="btn btn-primary btn-sm">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Slot -->
+    <main style="flex-grow:1;">
+        {% if error_message %}
+            <div class="container" style="margin-top:40px;">
+                <div style="background:#fee2e2; border-left:4px solid #ef4444; padding:20px; border-radius:8px; color:#991b1b;">
+                    <h3 style="color:#991b1b; margin-bottom:6px;">Notification</h3>
+                    <p>{{ error_message }}</p>
+                </div>
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Global Booking Modal -->
+    <div id="booking-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="modal-room-type">Confirm Reservation</h3>
+                    <div style="font-size:0.8rem; color:#cbd5e1;" id="modal-room-meta">Room Details</div>
+                </div>
+                <button class="modal-close" onclick="closeModal('booking-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background:#f8fafc; padding:16px; border-radius:var(--radius-md); border:1px solid var(--color-border); margin-bottom:20px;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; font-size:0.85rem;">
+                        <div>
+                            <span style="color:var(--color-text-muted); display:block;">Check-In:</span>
+                            <strong id="modal-checkin-val">--</strong>
+                        </div>
+                        <div>
+                            <span style="color:var(--color-text-muted); display:block;">Check-Out:</span>
+                            <strong id="modal-checkout-val">--</strong>
+                        </div>
+                        <div>
+                            <span style="color:var(--color-text-muted); display:block;">Duration:</span>
+                            <strong id="modal-nights-val">--</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add-on Services Section -->
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:0.85rem; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:10px;">
+                        Enhance Your Stay (Ancillary Services)
+                    </label>
+                    <div id="modal-services-list" style="display:flex; flex-direction:column; gap:8px; max-height:160px; overflow-y:auto;">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Payment Selection -->
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:0.85rem; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">
+                        Payment Method
+                    </label>
+                    <select id="modal-payment-mode" class="input-control">
+                        <option value="CREDIT_CARD">Credit Card (Visa / Mastercard / Amex)</option>
+                        <option value="DEBIT_CARD">Debit Card</option>
+                        <option value="UPI">UPI Instant Pay</option>
+                        <option value="NET_BANKING">Internet Banking</option>
+                        <option value="CASH">Pay at Front Desk (Cash)</option>
+                    </select>
+                </div>
+
+                <!-- Price Breakdown Calculation -->
+                <div style="background:#f1f5f9; padding:16px; border-radius:var(--radius-md); margin-bottom:24px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.9rem;">
+                        <span>Room Accommodation:</span>
+                        <strong id="modal-room-charge">$0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.9rem;">
+                        <span>Ancillary Services:</span>
+                        <strong id="modal-service-charge">$0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.9rem;">
+                        <span>Hospitality Tax & GST (12%):</span>
+                        <strong id="modal-tax-charge">$0.00</strong>
+                    </div>
+                    <div style="border-top:2px solid var(--color-accent); margin-top:8px; padding-top:10px; display:flex; justify-content:space-between; font-size:1.15rem; font-weight:800; color:var(--color-primary);">
+                        <span>Total Payable:</span>
+                        <span id="modal-grand-total" style="color:var(--color-accent-hover);">$0.00</span>
+                    </div>
+                </div>
+
+                <button id="modal-confirm-btn" class="btn btn-primary" style="width:100%;" onclick="confirmBookingSubmission()">
+                    Confirm & Complete Reservation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <div class="brand-logo" style="margin-bottom:12px;">
+                        <div class="logo-crown">♔</div>
+                        <div class="brand-text">GRAND <span>LUXE</span></div>
+                    </div>
+                    <p class="footer-brand-desc">
+                        A world-class luxury hotel reservation experience engineered with Oracle Database relational design, PL/SQL stored procedures, and high-performance full-stack web architecture.
+                    </p>
+                    <div style="margin-top:16px; display:flex; gap:12px; font-size:0.85rem; color:var(--color-accent);">
+                        <span>✓ Oracle PL/SQL</span> • <span>✓ python-oracledb</span> • <span>✓ 3-Tier Architecture</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="footer-col-title">Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/rooms">Suites & Rooms</a></li>
+                        <li><a href="/booking">Reservations</a></li>
+                        <li><a href="/login">Guest Sign In</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="footer-col-title">Guest Services</h4>
+                    <ul class="footer-links">
+                        <li><a href="/rooms">Presidential Ocean Suite</a></li>
+                        <li><a href="/rooms">Royal Garden Villa</a></li>
+                        <li><a href="/rooms">Executive Business Lounge</a></li>
+                        <li><a href="/rooms">Wellness Spa & Retreat</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="footer-col-title">Academic Mini-Project</h4>
+                    <p style="font-size:0.85rem; color:#94a3b8; line-height:1.6; margin-bottom:12px;">
+                        Database Systems Mini-Project (DA2)<br/>
+                        Oracle Database + SQL/PLSQL + Flask.
+                    </p>
+                    <div style="background:rgba(255,255,255,0.06); padding:10px; border-radius:6px; border:1px solid rgba(197,160,89,0.3); font-size:0.8rem;">
+                        <strong>DB Mode:</strong> {% if is_oracle_active %}Oracle Live DB{% else %}Development Engine{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>&copy; 2026 Grand Luxe Hotel & Resort. Developed for Database Systems Mini-Project.</div>
+                <div>Designed for Viva Demonstration & Academic Rigor.</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/booking.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

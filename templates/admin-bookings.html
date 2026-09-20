@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Reservations Management | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-title">Hotel Control Center</div>
+        <ul class="admin-menu">
+            <li class="admin-menu-item"><a href="/admin/dashboard">📊 Dashboard KPIs</a></li>
+            <li class="admin-menu-item"><a href="/admin/rooms">🏨 Rooms & Suites</a></li>
+            <li class="admin-menu-item active"><a href="/admin/bookings">📅 Reservations</a></li>
+            <li class="admin-menu-item"><a href="/admin/customers">👥 Guest Profiles</a></li>
+            <li class="admin-menu-item"><a href="/admin/services">🛎️ Hotel Services</a></li>
+            <li class="admin-menu-item"><a href="/admin/reports">📈 Reports & Views</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+            <div>
+                <h1 style="font-size:2rem; margin-bottom:4px;">Reservation Operations</h1>
+                <p style="color:var(--color-text-muted); font-size:0.95rem;">Manage guest check-ins, check-outs, cancellations, and status synchronizations.</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-outline btn-sm" onclick="loadAdminBookings('')">All</button>
+                <button class="btn btn-outline btn-sm" onclick="loadAdminBookings('CONFIRMED')">Upcoming</button>
+                <button class="btn btn-outline btn-sm" onclick="loadAdminBookings('CHECKED_IN')">Checked-In</button>
+                <button class="btn btn-outline btn-sm" onclick="loadAdminBookings('CHECKED_OUT')">Completed</button>
+                <button class="btn btn-outline btn-sm" onclick="loadAdminBookings('CANCELLED')">Cancelled</button>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <h3>All Guest Stays (Table: BOOKING)</h3>
+                <span class="badge badge-available">Automated Trigger Synchronization</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Booking #</th>
+                            <th>Guest</th>
+                            <th>Room Allocation</th>
+                            <th>Stay Period</th>
+                            <th>Total Rate</th>
+                            <th>Status</th>
+                            <th>Change Status</th>
+                            <th>Folio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-bookings-tbody">
+                        <tr>
+                            <td colspan="8" style="text-align:center; padding:32px;">Loading reservations...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAdminBookings();
+    });
+</script>
+{% endblock %}

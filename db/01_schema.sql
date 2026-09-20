@@ -1,0 +1,217 @@
+-- ============================================================================
+-- SMART HOTEL RESERVATION AND BOOKING MANAGEMENT SYSTEM
+-- SCRIPT 01: DATABASE SCHEMA DEFINITION (TABLES & IDENTITIES)
+-- Database: Oracle Database 19c / 21c / 23ai / Express Edition (XE)
+-- DA2 Course Requirement: Relational Schema & Normalization
+-- ============================================================================
+
+-- Clean up existing tables and sequences if present
+BEGIN
+    FOR t IN (SELECT table_name FROM user_tables WHERE table_name IN 
+              ('FEEDBACK', 'BOOKING_SERVICE', 'EMPLOYEE', 'SERVICE', 
+               'INVOICE', 'PAYMENT', 'BOOKING', 'ROOM', 'ROOM_TYPE', 'CUSTOMER')) 
+    LOOP
+        EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS PURGE';
+    END LOOP;
+EXCEPTION
+    WHEN OTHERS THEN
+        NULL;
+END;
+/
+
+-- ----------------------------------------------------------------------------
+-- 1. TABLE: CUSTOMER
+-- Stores guest profile details and admin accounts for secure authentication
+-- ----------------------------------------------------------------------------
+CREATE TABLE CUSTOMER (
+    Customer_ID      NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    Name             VARCHAR2(100) NOT NULL,
+    Phone            VARCHAR2(20)  NOT NULL,
+    Email            VARCHAR2(100) NOT NULL,
+    Password_Hash    VARCHAR2(255) NOT NULL,
+    Role             VARCHAR2(20)  DEFAULT 'CUSTOMER' NOT NULL,
+    Address          VARCHAR2(255),
+    Date_Of_Birth    DATE,
+    Created_At       TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT PK_CUSTOMER PRIMARY KEY (Customer_ID),
+    CONSTRAINT UQ_CUSTOMER_EMAIL UNIQUE (Email),
+    CONSTRAINT UQ_CUSTOMER_PHONE UNIQUE (Phone),
+    CONSTRAINT CHK_CUSTOMER_ROLE CHECK (Role IN ('CUSTOMER', 'ADMIN'))
+);
+
+-- ----------------------------------------------------------------------------
+-- 2. TABLE: ROOM_TYPE
+-- Categorization of hotel suites and rooms with standard pricing and occupancy
+-- ----------------------------------------------------------------------------
+CREATE TABLE ROOM_TYPE (
+    RoomType_ID      NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    Type_Name        VARCHAR2(50)  NOT NULL,
+    Description      VARCHAR2(500) NOT NULL,
+    Base_Price       NUMBER(10, 2) NOT NULL,
+    Max_Occupancy    NUMBER(2)     DEFAULT 2 NOT NULL,
+    Amenities        VARCHAR2(255),
+    Image_URL        VARCHAR2(255),
+    CONSTRAINT PK_ROOM_TYPE PRIMARY KEY (RoomType_ID),
+    CONSTRAINT UQ_ROOM_TYPE_NAME UNIQUE (Type_Name),
+    CONSTRAINT CHK_ROOM_TYPE_PRICE CHECK (Base_Price >= 0),
+    CONSTRAINT CHK_ROOM_TYPE_OCCUPANCY CHECK (Max_Occupancy > 0)
+);
+
+-- ----------------------------------------------------------------------------
+-- 3. TABLE: ROOM
+-- Physical inventory of hotel rooms across floors
+-- ----------------------------------------------------------------------------
+CREATE TABLE ROOM (
+    Room_ID          NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    Room_Number      VARCHAR2(10)  NOT NULL,
+    Floor            NUMBER(3)     NOT NULL,
+    RoomType_ID      NUMBER        NOT NULL,
+    Price_Per_Night  NUMBER(10, 2) NOT NULL,
+    Status           VARCHAR2(20)  DEFAULT 'AVAILABLE' NOT NULL,
+    CONSTRAINT PK_ROOM PRIMARY KEY (Room_ID),
+    CONSTRAINT UQ_ROOM_NUMBER UNIQUE (Room_Number),
+    CONSTRAINT FK_ROOM_ROOMTYPE FOREIGN KEY (RoomType_ID) 
+        REFERENCES ROOM_TYPE (RoomType_ID) ON DELETE CASCADE,
+    CONSTRAINT CHK_ROOM_PRICE CHECK (Price_Per_Night >= 0),
+    CONSTRAINT CHK_ROOM_STATUS CHECK (Status IN ('AVAILABLE', 'OCCUPIED', 'MAINTENANCE'))
+);
+
+-- ----------------------------------------------------------------------------
+-- 4. TABLE: BOOKING
+-- Reservation transactions linking guests to physical rooms over date ranges
+-- ----------------------------------------------------------------------------
+CREATE TABLE BOOKING (
+    Booking_ID       NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1001 INCREMENT BY 1),
+    Customer_ID      NUMBER        NOT NULL,
+    Room_ID          NUMBER        NOT NULL,
+    Booking_Date     DATE          DEFAULT SYSDATE NOT NULL,
+    No_Of_Guests     NUMBER(2)     DEFAULT 1 NOT NULL,
+    Check_In_Date    DATE          NOT NULL,
+    Check_Out_Date   DATE          NOT NULL,
+    Total_Amount     NUMBER(10, 2) DEFAULT 0 NOT NULL,
+    Status           VARCHAR2(20)  DEFAULT 'CONFIRMED' NOT NULL,
+    CONSTRAINT PK_BOOKING PRIMARY KEY (Booking_ID),
+    CONSTRAINT FK_BOOKING_CUSTOMER FOREIGN KEY (Customer_ID) 
+        REFERENCES CUSTOMER (Customer_ID),
+    CONSTRAINT FK_BOOKING_ROOM FOREIGN KEY (Room_ID) 
+        REFERENCES ROOM (Room_ID),
+    CONSTRAINT CHK_BOOKING_DATES CHECK (Check_Out_Date > Check_In_Date),
+    CONSTRAINT CHK_BOOKING_GUESTS CHECK (No_Of_Guests > 0),
+    CONSTRAINT CHK_BOOKING_TOTAL CHECK (Total_Amount >= 0),
+    CONSTRAINT CHK_BOOKING_STATUS CHECK (Status IN ('CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'CANCELLED'))
+);
+
+-- ----------------------------------------------------------------------------
+-- 5. TABLE: PAYMENT
+-- Financial receipts logged for bookings
+-- ----------------------------------------------------------------------------
+CREATE TABLE PAYMENT (
+    Payment_ID       NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 5001 INCREMENT BY 1),
+    Booking_ID       NUMBER        NOT NULL,
+    Payment_Date     DATE          DEFAULT SYSDATE NOT NULL,
+    Amount           NUMBER(10, 2) NOT NULL,
+    Payment_Mode     VARCHAR2(30)  NOT NULL,
+    Status           VARCHAR2(20)  DEFAULT 'COMPLETED' NOT NULL,
+    CONSTRAINT PK_PAYMENT PRIMARY KEY (Payment_ID),
+    CONSTRAINT FK_PAYMENT_BOOKING FOREIGN KEY (Booking_ID) 
+        REFERENCES BOOKING (Booking_ID) ON DELETE CASCADE,
+    CONSTRAINT CHK_PAYMENT_AMOUNT CHECK (Amount >= 0),
+    CONSTRAINT CHK_PAYMENT_MODE CHECK (Payment_Mode IN ('CREDIT_CARD', 'DEBIT_CARD', 'UPI', 'NET_BANKING', 'CASH')),
+    CONSTRAINT CHK_PAYMENT_STATUS CHECK (Status IN ('COMPLETED', 'PENDING', 'FAILED', 'REFUNDED'))
+);
+
+-- ----------------------------------------------------------------------------
+-- 6. TABLE: INVOICE
+-- Official billing statement generated per booking (1:1 Relationship)
+-- ----------------------------------------------------------------------------
+CREATE TABLE INVOICE (
+    Invoice_ID       NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 9001 INCREMENT BY 1),
+    Booking_ID       NUMBER        NOT NULL,
+    Invoice_Date     DATE          DEFAULT SYSDATE NOT NULL,
+    Room_Charge      NUMBER(10, 2) NOT NULL,
+    Service_Charge   NUMBER(10, 2) DEFAULT 0 NOT NULL,
+    Tax_Amount       NUMBER(10, 2) DEFAULT 0 NOT NULL,
+    Total_Amount     NUMBER(10, 2) NOT NULL,
+    Payment_Status   VARCHAR2(20)  DEFAULT 'PAID' NOT NULL,
+    CONSTRAINT PK_INVOICE PRIMARY KEY (Invoice_ID),
+    CONSTRAINT UQ_INVOICE_BOOKING UNIQUE (Booking_ID),
+    CONSTRAINT FK_INVOICE_BOOKING FOREIGN KEY (Booking_ID) 
+        REFERENCES BOOKING (Booking_ID) ON DELETE CASCADE,
+    CONSTRAINT CHK_INVOICE_ROOM_CHARGE CHECK (Room_Charge >= 0),
+    CONSTRAINT CHK_INVOICE_SRV_CHARGE CHECK (Service_Charge >= 0),
+    CONSTRAINT CHK_INVOICE_TAX CHECK (Tax_Amount >= 0),
+    CONSTRAINT CHK_INVOICE_TOTAL CHECK (Total_Amount >= 0),
+    CONSTRAINT CHK_INVOICE_STATUS CHECK (Payment_Status IN ('PAID', 'PENDING', 'PARTIAL'))
+);
+
+-- ----------------------------------------------------------------------------
+-- 7. TABLE: SERVICE
+-- Additional amenities and hospitality services offered by the hotel
+-- ----------------------------------------------------------------------------
+CREATE TABLE SERVICE (
+    Service_ID       NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    Service_Name     VARCHAR2(100) NOT NULL,
+    Category         VARCHAR2(50)  NOT NULL,
+    Price            NUMBER(10, 2) NOT NULL,
+    CONSTRAINT PK_SERVICE PRIMARY KEY (Service_ID),
+    CONSTRAINT UQ_SERVICE_NAME UNIQUE (Service_Name),
+    CONSTRAINT CHK_SERVICE_PRICE CHECK (Price >= 0)
+);
+
+-- ----------------------------------------------------------------------------
+-- 8. TABLE: BOOKING_SERVICE (Junction Table M:N)
+-- Resolves many-to-many relationship between BOOKING and SERVICE
+-- ----------------------------------------------------------------------------
+CREATE TABLE BOOKING_SERVICE (
+    BookingService_ID NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    Booking_ID        NUMBER        NOT NULL,
+    Service_ID        NUMBER        NOT NULL,
+    Quantity          NUMBER(3)     DEFAULT 1 NOT NULL,
+    Service_Amount    NUMBER(10, 2) NOT NULL,
+    Service_Date      DATE          DEFAULT SYSDATE NOT NULL,
+    CONSTRAINT PK_BOOKING_SERVICE PRIMARY KEY (BookingService_ID),
+    CONSTRAINT FK_BS_BOOKING FOREIGN KEY (Booking_ID) 
+        REFERENCES BOOKING (Booking_ID) ON DELETE CASCADE,
+    CONSTRAINT FK_BS_SERVICE FOREIGN KEY (Service_ID) 
+        REFERENCES SERVICE (Service_ID),
+    CONSTRAINT CHK_BS_QUANTITY CHECK (Quantity > 0),
+    CONSTRAINT CHK_BS_AMOUNT CHECK (Service_Amount >= 0)
+);
+
+-- ----------------------------------------------------------------------------
+-- 9. TABLE: EMPLOYEE
+-- Hotel staff management for administrative operations
+-- ----------------------------------------------------------------------------
+CREATE TABLE EMPLOYEE (
+    Employee_ID      NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 101 INCREMENT BY 1),
+    Name             VARCHAR2(100) NOT NULL,
+    Designation      VARCHAR2(50)  NOT NULL,
+    Phone            VARCHAR2(20)  NOT NULL,
+    Email            VARCHAR2(100) NOT NULL,
+    Salary           NUMBER(10, 2) NOT NULL,
+    Hire_Date        DATE          DEFAULT SYSDATE NOT NULL,
+    CONSTRAINT PK_EMPLOYEE PRIMARY KEY (Employee_ID),
+    CONSTRAINT UQ_EMPLOYEE_EMAIL UNIQUE (Email),
+    CONSTRAINT CHK_EMPLOYEE_SALARY CHECK (Salary >= 0)
+);
+
+-- ----------------------------------------------------------------------------
+-- 10. TABLE: FEEDBACK
+-- Guest satisfaction ratings and comments
+-- ----------------------------------------------------------------------------
+CREATE TABLE FEEDBACK (
+    Feedback_ID      NUMBER GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    Customer_ID      NUMBER        NOT NULL,
+    Booking_ID       NUMBER,
+    Feedback_Date    DATE          DEFAULT SYSDATE NOT NULL,
+    Rating           NUMBER(1)     NOT NULL,
+    Comments         VARCHAR2(1000),
+    CONSTRAINT PK_FEEDBACK PRIMARY KEY (Feedback_ID),
+    CONSTRAINT FK_FEEDBACK_CUSTOMER FOREIGN KEY (Customer_ID) 
+        REFERENCES CUSTOMER (Customer_ID),
+    CONSTRAINT FK_FEEDBACK_BOOKING FOREIGN KEY (Booking_ID) 
+        REFERENCES BOOKING (Booking_ID) ON DELETE SET NULL,
+    CONSTRAINT CHK_FEEDBACK_RATING CHECK (Rating BETWEEN 1 AND 5)
+);
+
+COMMIT;
