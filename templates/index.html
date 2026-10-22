@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Grand Luxe Hotel & Resort | Five-Star Luxury Experience{% endblock %}
+
+{% block content %}
+<!-- Hero Section with Luxury Backdrop -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <div class="hero-badge">
+                ★ 5-Star Luxury Experience & Resort
+            </div>
+            <h1 class="hero-title">Timeless Luxury, Unrivaled Hospitality.</h1>
+            <p class="hero-subtitle">
+                Escape to the pinnacle of architectural grandeur, bespoke butler service, and exquisite coastal vistas at Grand Luxe Hotel.
+            </p>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                <a href="#booking-search" class="btn btn-primary">Book Your Stay</a>
+                <a href="/rooms" class="btn btn-dark">Explore Suites & Villas</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Floating Search Bar Widget -->
+<section id="booking-search" class="search-widget-wrapper">
+    <div class="container">
+        <form id="booking-search-form" class="search-widget">
+            <div class="input-group">
+                <label for="search-checkin">Check-In Date</label>
+                <input type="date" id="search-checkin" class="input-control" required />
+            </div>
+
+            <div class="input-group">
+                <label for="search-checkout">Check-Out Date</label>
+                <input type="date" id="search-checkout" class="input-control" required />
+            </div>
+
+            <div class="input-group">
+                <label for="search-guests">Guests</label>
+                <select id="search-guests" class="input-control">
+                    <option value="1">1 Guest</option>
+                    <option value="2" selected>2 Guests</option>
+                    <option value="3">3 Guests</option>
+                    <option value="4">4 Guests (Suites/Villas)</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="search-roomtype">Suite Preference</label>
+                <select id="search-roomtype" class="input-control">
+                    <option value="">All Categories</option>
+                    {% for rt in room_types %}
+                        <option value="{{ rt.roomtype_id or rt.RoomType_ID }}">{{ rt.type_name or rt.Type_Name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="height:48px;">
+                Check Live Availability
+            </button>
+        </form>
+    </div>
+</section>
+
+<!-- Live Search Results (Injected on Search) -->
+<section style="padding: 40px 0;">
+    <div class="container" id="search-results-container">
+        <!-- Dynamically rendered by booking.js when user submits search -->
+    </div>
+</section>
+
+<!-- Featured Rooms & Suites Showcase -->
+<section style="padding: 60px 0 80px; background-color: #f8fafc;">
+    <div class="container">
+        <div class="text-center" style="margin-bottom: 48px;">
+            <div class="section-tag">Sanctuaries of Comfort</div>
+            <h2 class="section-title">Signature Suites & Residences</h2>
+            <p class="section-desc">Each room is meticulously appointed with handcrafted walnut wood, private terraces, Italian marble bathrooms, and bespoke amenities.</p>
+        </div>
+
+        <div class="rooms-grid">
+            {% for rt in room_types %}
+            <div class="room-card">
+                <div class="room-card-img-wrapper">
+                    <img src="{{ rt.image_url or rt.Image_URL }}" alt="{{ rt.type_name or rt.Type_Name }}" class="room-card-img" />
+                    <div class="room-price-badge">
+                        ${{ rt.base_price or rt.Base_Price }} <span>/ night</span>
+                    </div>
+                </div>
+                <div class="room-card-body">
+                    <div class="room-type-tag">Max Occupancy: {{ rt.max_occupancy or rt.Max_Occupancy }} Guests</div>
+                    <h3 class="room-card-title">{{ rt.type_name or rt.Type_Name }}</h3>
+                    <p class="room-card-desc">{{ rt.description or rt.Description }}</p>
+                    <div class="room-amenity-tags">
+                        {% for a in (rt.amenities or rt.Amenities or '').split(',') %}
+                            <span class="amenity-pill">{{ a.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="room-card-footer">
+                        <div class="occupancy-info">
+                            <span>★ 5.0 Rating</span> • <span>Free Cancellation</span>
+                        </div>
+                        <a href="/rooms?room_type_id={{ rt.roomtype_id or rt.RoomType_ID }}" class="btn btn-primary btn-sm">
+                            View Rooms
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Hotel Amenities & VIP Services -->
+<section style="padding: 80px 0; background-color: var(--color-surface);">
+    <div class="container">
+        <div class="text-center">
+            <div class="section-tag">Exclusive Privileges</div>
+            <h2 class="section-title">Bespoke Guest Amenities</h2>
+            <p class="section-desc">Indulge in personalized hospitality tailored to your desires, from private limousine airport transfers to secluded sunset yacht charters.</p>
+        </div>
+
+        <div class="services-grid">
+            {% for s in services %}
+            <div class="service-card">
+                <div class="service-icon">
+                    {% if 'SPA' in (s.category or s.Category) %}🌿
+                    {% elif 'DINING' in (s.category or s.Category) %}🥂
+                    {% elif 'TRANSPORT' in (s.category or s.Category) %}🚗
+                    {% elif 'EXPERIENCE' in (s.category or s.Category) %}⛵
+                    {% elif 'WELLNESS' in (s.category or s.Category) %}🧘
+                    {% elif 'BUSINESS' in (s.category or s.Category) %}💻
+                    {% else %}🛎️{% endif %}
+                </div>
+                <h3 class="service-name">{{ s.service_name or s.Service_Name }}</h3>
+                <div class="service-price">${{ s.price or s.Price }}</div>
+                <span class="amenity-pill">{{ s.category or s.Category }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Verified Guest Reviews -->
+<section style="padding: 80px 0; background-color: #f1f5f9;">
+    <div class="container">
+        <div class="text-center">
+            <div class="section-tag">Guest Experiences</div>
+            <h2 class="section-title">Stories From Our Visitors</h2>
+            <p class="section-desc">Discover why travelers and executives consistently rank Grand Luxe among the world's finest resort destinations.</p>
+        </div>
+
+        <div class="testimonials-grid">
+            {% for t in testimonials %}
+            <div class="testimonial-card">
+                <div class="stars">
+                    {% for _ in range(t.rating or t.Rating or 5) %}★{% endfor %}
+                </div>
+                <p class="testimonial-quote">"{{ t.comments or t.Comments }}"</p>
+                <div class="testimonial-author">
+                    <div class="user-avatar-circle">{{ (t.customer_name or t.Customer_Name or 'G')[0] }}</div>
+                    <div>
+                        <div class="author-name">{{ t.customer_name or t.Customer_Name }}</div>
+                        <div class="author-stay">Verified Guest Stay • {{ t.feedback_date or t.Feedback_Date }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Academic DA2 Architectural Highlights Box (For Viva Presentation) -->
+<section style="padding: 60px 0; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%); color:#ffffff;">
+    <div class="container">
+        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(197, 160, 89, 0.3); border-radius: var(--radius-xl); padding: 40px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px; margin-bottom:24px;">
+                <div>
+                    <div class="section-tag" style="color:var(--color-accent);">Academic Requirement (DA2)</div>
+                    <h2 style="color:#ffffff; font-size:2rem; margin-bottom:8px;">Database Systems Architecture</h2>
+                    <p style="color:#cbd5e1; max-width:650px; font-size:0.95rem;">
+                        This system demonstrates real-world relational database design, Oracle SQL constraints, PL/SQL stored procedures, functions, triggers, and transactions connected via python-oracledb.
+                    </p>
+                </div>
+                <a href="/admin/reports" class="btn btn-outline">View Analytical Reports & SQL Objects</a>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px;">
+                <div style="background:rgba(0,0,0,0.25); padding:16px; border-radius:var(--radius-md); border-left:3px solid var(--color-accent);">
+                    <strong style="color:var(--color-accent); display:block; margin-bottom:4px;">SP_CREATE_BOOKING</strong>
+                    <span style="font-size:0.85rem; color:#e2e8f0;">Atomic procedure validating dates, preventing overlap, and writing booking.</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.25); padding:16px; border-radius:var(--radius-md); border-left:3px solid var(--color-accent);">
+                    <strong style="color:var(--color-accent); display:block; margin-bottom:4px;">FN_CALCULATE_BOOKING</strong>
+                    <span style="font-size:0.85rem; color:#e2e8f0;">Stored function computing stay duration, rates, and ancillary services.</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.25); padding:16px; border-radius:var(--radius-md); border-left:3px solid var(--color-accent);">
+                    <strong style="color:var(--color-accent); display:block; margin-bottom:4px;">TRG_SYNC_ROOM_STATUS</strong>
+                    <span style="font-size:0.85rem; color:#e2e8f0;">Trigger updating room inventory to OCCUPIED on check-in and AVAILABLE on release.</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.25); padding:16px; border-radius:var(--radius-md); border-left:3px solid var(--color-accent);">
+                    <strong style="color:var(--color-accent); display:block; margin-bottom:4px;">5 Analytical Views</strong>
+                    <span style="font-size:0.85rem; color:#e2e8f0;">VW_MONTHLY_REVENUE_REPORT, VW_ROOM_OCCUPANCY_SUMMARY, and more.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

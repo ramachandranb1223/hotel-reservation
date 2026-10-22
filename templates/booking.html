@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Book A Suite | Grand Luxe Hotel & Resort{% endblock %}
+
+{% block content %}
+<section style="background: linear-gradient(rgba(11, 19, 43, 0.85), rgba(11, 19, 43, 0.95)), url('https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1920&q=80') center/cover; padding: 60px 0; color: white;">
+    <div class="container text-center">
+        <div class="section-tag">Direct Reservation</div>
+        <h1 class="section-title" style="color:white;">Secure Your Luxury Retreat</h1>
+        <p class="section-desc" style="color:#cbd5e1; margin-bottom:0;">Experience an effortless reservation workflow backed by atomic PL/SQL transactions and instant confirmation.</p>
+    </div>
+</section>
+
+<section style="padding: 60px 0;">
+    <div class="container" style="max-width: 900px;">
+        <div style="background:white; border-radius:var(--radius-xl); padding:40px; box-shadow:var(--shadow-lg); border:1px solid var(--color-border);">
+            <form id="direct-booking-form">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px;">
+                    <div class="input-group">
+                        <label for="direct-checkin">Check-In Date *</label>
+                        <input type="date" id="direct-checkin" class="input-control" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="direct-checkout">Check-Out Date *</label>
+                        <input type="date" id="direct-checkout" class="input-control" required />
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:2fr 1fr; gap:24px; margin-bottom:24px;">
+                    <div class="input-group">
+                        <label for="direct-room-select">Choose Available Room *</label>
+                        <select id="direct-room-select" class="input-control" required>
+                            <option value="">Select a room...</option>
+                            <!-- Injected dynamically based on availability -->
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="direct-guests">Number of Guests</label>
+                        <select id="direct-guests" class="input-control">
+                            <option value="1">1 Guest</option>
+                            <option value="2" selected>2 Guests</option>
+                            <option value="3">3 Guests</option>
+                            <option value="4">4 Guests</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Add-on Services Checklist -->
+                <div style="margin-bottom:28px;">
+                    <label style="font-size:0.85rem; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:12px;">
+                        Select Add-on Amenities & Services
+                    </label>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        {% for s in services %}
+                        <label style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#f8fafc; border-radius:var(--radius-md); border:1px solid var(--color-border); cursor:pointer;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <input type="checkbox" class="direct-service-chk" value="{{ s.service_id or s.Service_ID }}" data-price="{{ s.price or s.Price }}" />
+                                <span style="font-size:0.9rem; font-weight:500;">{{ s.service_name or s.Service_Name }}</span>
+                            </div>
+                            <span style="font-weight:700; color:var(--color-accent-hover); font-size:0.9rem;">+${{ s.price or s.Price }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Payment Selection -->
+                <div class="input-group" style="margin-bottom:28px;">
+                    <label for="direct-payment-mode">Payment Method</label>
+                    <select id="direct-payment-mode" class="input-control">
+                        <option value="CREDIT_CARD">Credit Card (Instant Online Settlement)</option>
+                        <option value="DEBIT_CARD">Debit Card</option>
+                        <option value="UPI">UPI Instant Pay</option>
+                        <option value="NET_BANKING">Net Banking</option>
+                        <option value="CASH">Cash at Check-In</option>
+                    </select>
+                </div>
+
+                <!-- Live Price Calculation Box -->
+                <div style="background:#f1f5f9; border-radius:var(--radius-lg); padding:24px; margin-bottom:28px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>Room Rate Subtotal:</span>
+                        <strong id="calc-room-subtotal">$0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>Services Subtotal:</span>
+                        <strong id="calc-service-subtotal">$0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>Taxes & GST (12%):</span>
+                        <strong id="calc-tax-subtotal">$0.00</strong>
+                    </div>
+                    <div style="border-top:2px solid var(--color-accent); margin-top:10px; padding-top:12px; display:flex; justify-content:space-between; font-size:1.25rem; font-weight:800; color:var(--color-primary);">
+                        <span>Total Estimated Amount:</span>
+                        <span id="calc-grand-total" style="color:var(--color-accent-hover);">$0.00</span>
+                    </div>
+                </div>
+
+                <button type="submit" id="direct-submit-btn" class="btn btn-primary" style="width:100%; height:50px; font-size:1.1rem;">
+                    Confirm Booking (Call SP_CREATE_BOOKING)
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let selectedRoomPrice = 0;
+    let stayNights = 1;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const inInput = document.getElementById('direct-checkin');
+        const outInput = document.getElementById('direct-checkout');
+        const guestsInput = document.getElementById('direct-guests');
+        const roomSelect = document.getElementById('direct-room-select');
+
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const dayAfter = new Date(today);
+        dayAfter.setDate(today.getDate() + 4);
+
+        const formatDate = (d) => d.toISOString().split('T')[0];
+        inInput.min = formatDate(today);
+        inInput.value = formatDate(tomorrow);
+        outInput.min = formatDate(tomorrow);
+        outInput.value = formatDate(dayAfter);
+
+        async function fetchAvailableRoomsForDates() {
+            const cin = inInput.value;
+            const cout = outInput.value;
+            const guests = guestsInput.value;
+
+            if (!cin || !cout || cout <= cin) return;
+
+            roomSelect.innerHTML = '<option value="">Loading available rooms...</option>';
+
+            try {
+                const resp = await apiRequest(`/api/rooms/available?check_in=${cin}&check_out=${cout}&guests=${guests}`);
+                const rooms = resp.data.rooms;
+                stayNights = resp.data.nights;
+
+                if (rooms.length === 0) {
+                    roomSelect.innerHTML = '<option value="">No rooms available for these dates</option>';
+                    selectedRoomPrice = 0;
+                } else {
+                    let html = '<option value="">Select a room from inventory...</option>';
+                    rooms.forEach(r => {
+                        const rid = r.room_id || r.Room_ID;
+                        const rnum = r.room_number || r.Room_Number;
+                        const type = r.type_name || r.Type_Name;
+                        const price = r.price_per_night || r.Price_Per_Night;
+                        html += `<option value="${rid}" data-price="${price}">Room ${rnum} (${type}) - $${price}/night</option>`;
+                    });
+                    roomSelect.innerHTML = html;
+                }
+                recalcDirectPricing();
+            } catch (err) {
+                roomSelect.innerHTML = '<option value="">Error checking availability</option>';
+            }
+        }
+
+        inInput.addEventListener('change', () => {
+            const next = new Date(inInput.value);
+            next.setDate(next.getDate() + 1);
+            outInput.min = formatDate(next);
+            if (outInput.value <= inInput.value) {
+                outInput.value = formatDate(next);
+            }
+            fetchAvailableRoomsForDates();
+        });
+
+        outInput.addEventListener('change', fetchAvailableRoomsForDates);
+        guestsInput.addEventListener('change', fetchAvailableRoomsForDates);
+
+        roomSelect.addEventListener('change', () => {
+            const opt = roomSelect.options[roomSelect.selectedIndex];
+            selectedRoomPrice = opt.getAttribute('data-price') ? parseFloat(opt.getAttribute('data-price')) : 0;
+            recalcDirectPricing();
+        });
+
+        document.querySelectorAll('.direct-service-chk').forEach(chk => {
+            chk.addEventListener('change', recalcDirectPricing);
+        });
+
+        fetchAvailableRoomsForDates();
+
+        // Form Submit
+        document.getElementById('direct-booking-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const rid = roomSelect.value;
+            if (!rid) {
+                showToast('Please select an available room.', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('direct-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing Reservation...';
+
+            const selectedServices = [];
+            document.querySelectorAll('.direct-service-chk:checked').forEach(c => {
+                selectedServices.push({ service_id: parseInt(c.value), quantity: 1 });
+            });
+
+            try {
+                const resp = await apiRequest('/api/bookings', {
+                    method: 'POST',
+                    body: {
+                        room_id: parseInt(rid),
+                        check_in: inInput.value,
+                        check_out: outInput.value,
+                        no_of_guests: parseInt(guestsInput.value),
+                        payment_mode: document.getElementById('direct-payment-mode').value,
+                        services: selectedServices
+                    }
+                });
+
+                showToast(resp.message, 'success');
+                setTimeout(() => {
+                    window.location.href = resp.invoice_url;
+                }, 1000);
+            } catch (err) {
+                showToast(`Booking Failed: ${err.message}`, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Confirm Booking (Call SP_CREATE_BOOKING)';
+            }
+        });
+    });
+
+    function recalcDirectPricing() {
+        const roomTotal = selectedRoomPrice * stayNights;
+        let srvTotal = 0;
+        document.querySelectorAll('.direct-service-chk:checked').forEach(c => {
+            srvTotal += parseFloat(c.getAttribute('data-price') || 0);
+        });
+        const subtotal = roomTotal + srvTotal;
+        const tax = Math.round(subtotal * 0.12 * 100) / 100;
+        const grand = Math.round((subtotal + tax) * 100) / 100;
+
+        document.getElementById('calc-room-subtotal').textContent = `$${roomTotal.toFixed(2)}`;
+        document.getElementById('calc-service-subtotal').textContent = `$${srvTotal.toFixed(2)}`;
+        document.getElementById('calc-tax-subtotal').textContent = `$${tax.toFixed(2)}`;
+        document.getElementById('calc-grand-total').textContent = `$${grand.toFixed(2)}`;
+    }
+</script>
+{% endblock %}

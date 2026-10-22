@@ -1,0 +1,779 @@
+{% extends "base.html" %}
+
+{% block title %}My Reservations | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+
+<section style="background: linear-gradient(rgba(11, 19, 43, 0.85), rgba(11, 19, 43, 0.95)), url('https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1920&q=80') center/cover; padding: 60px 0; color: white;">
+    <div class="container text-center">
+        <div class="section-tag">Guest Dashboard</div>
+
+        <h1 class="section-title" style="color:white;">
+            Your Reservation History
+        </h1>
+
+        <p class="section-desc" style="color:#cbd5e1; margin-bottom:0;">
+            View your luxury stays, download tax folios, and submit feedback for our hospitality team.
+        </p>
+    </div>
+</section>
+
+
+<section style="padding: 60px 0;">
+    <div class="container">
+
+        <div class="table-card">
+
+            <div class="table-header">
+                <h3 style="font-size:1.2rem;">
+                    Active & Past Bookings
+                </h3>
+
+                <a href="/booking" class="btn btn-primary btn-sm">
+                    + New Reservation
+                </a>
+            </div>
+
+
+            <div style="overflow-x:auto;">
+
+                <table class="custom-table">
+
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Room & Category</th>
+                            <th>Stay Dates</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Invoice / Payment</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+
+                    <tbody id="my-bookings-tbody">
+
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:32px;">
+                                Loading your reservations...
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+
+<!-- ========================================================= -->
+<!-- FEEDBACK / SUBMIT REVIEW MODAL -->
+<!-- ========================================================= -->
+
+<div id="feedback-modal" class="modal-overlay">
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+
+            <h3 class="modal-title">
+                Guest Feedback & Review
+            </h3>
+
+            <button
+                class="modal-close"
+                onclick="closeModal('feedback-modal')">
+                &times;
+            </button>
+
+        </div>
+
+
+        <div class="modal-body">
+
+            <form id="feedback-form">
+
+                <input
+                    type="hidden"
+                    id="fb-booking-id"
+                />
+
+
+                <div class="input-group" style="margin-bottom:18px;">
+
+                    <label for="fb-rating">
+                        Rating Score
+                    </label>
+
+                    <select
+                        id="fb-rating"
+                        class="input-control"
+                        required
+                    >
+
+                        <option value="5">
+                            ★★★★★ (5 - Exceptional Luxury)
+                        </option>
+
+                        <option value="4">
+                            ★★★★☆ (4 - Very Good)
+                        </option>
+
+                        <option value="3">
+                            ★★★☆☆ (3 - Satisfactory)
+                        </option>
+
+                        <option value="2">
+                            ★★☆☆☆ (2 - Needs Improvement)
+                        </option>
+
+                        <option value="1">
+                            ★☆☆☆☆ (1 - Unsatisfactory)
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="input-group" style="margin-bottom:24px;">
+
+                    <label for="fb-comments">
+                        Comments & Experience
+                    </label>
+
+                    <textarea
+                        id="fb-comments"
+                        class="input-control"
+                        rows="4"
+                        placeholder="Share your experience regarding our accommodations, concierge, and dining..."
+                        required
+                    ></textarea>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    style="width:100%;"
+                >
+                    Submit Review
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================================================= -->
+<!-- VIEW REVIEW MODAL -->
+<!-- ========================================================= -->
+
+<div id="view-review-modal" class="modal-overlay">
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+
+            <h3 class="modal-title">
+                Your Review
+            </h3>
+
+            <button
+                class="modal-close"
+                onclick="closeModal('view-review-modal')">
+                &times;
+            </button>
+
+        </div>
+
+
+        <div class="modal-body">
+
+            <!-- Rating -->
+
+            <div style="margin-bottom:20px;">
+
+                <label
+                    style="font-weight:700; display:block; margin-bottom:8px;"
+                >
+                    Rating
+                </label>
+
+                <div
+                    id="view-review-rating"
+                    style="font-size:1.5rem; color:var(--color-accent);"
+                ></div>
+
+            </div>
+
+
+            <!-- Comments -->
+
+            <div style="margin-bottom:20px;">
+
+                <label
+                    style="font-weight:700; display:block; margin-bottom:8px;"
+                >
+                    Your Comments
+                </label>
+
+                <div
+                    id="view-review-comments"
+                    style="
+                        background:#f8fafc;
+                        border-radius:8px;
+                        padding:16px;
+                        line-height:1.6;
+                    "
+                ></div>
+
+            </div>
+
+
+            <!-- Date -->
+
+            <div>
+
+                <label
+                    style="font-weight:700; display:block; margin-bottom:8px;"
+                >
+                    Submitted On
+                </label>
+
+                <div
+                    id="view-review-date"
+                    style="color:var(--color-text-muted);"
+                ></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+
+<script>
+
+    /* =========================================================
+       LOAD BOOKINGS
+       ========================================================= */
+
+    async function loadMyBookings() {
+
+        const tbody = document.getElementById('my-bookings-tbody');
+
+        try {
+
+            const resp = await apiRequest('/api/my-bookings');
+
+            const bookings = resp.bookings;
+
+
+            if (!bookings || bookings.length === 0) {
+
+                tbody.innerHTML = `
+                    <tr>
+                        <td
+                            colspan="7"
+                            style="
+                                text-align:center;
+                                padding:48px;
+                                color:var(--color-text-muted);
+                            "
+                        >
+                            You have no reservations on record yet.
+
+                            <a
+                                href="/booking"
+                                style="
+                                    color:var(--color-accent);
+                                    font-weight:700;
+                                "
+                            >
+                                Book a room now
+                            </a>.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+
+            let html = '';
+
+
+            bookings.forEach(b => {
+
+                const bid =
+                    b.booking_id || b.Booking_ID;
+
+                const roomNum =
+                    b.room_number || b.Room_Number;
+
+                const roomType =
+                    b.room_type || b.Room_Type;
+
+                const checkIn =
+                    b.check_in_date || b.Check_In_Date;
+
+                const checkOut =
+                    b.check_out_date || b.Check_Out_Date;
+
+                const total =
+                    b.total_amount || b.Total_Amount;
+
+                const status =
+                    b.booking_status || b.Booking_Status;
+
+
+                /*
+                 * Feedback information returned by
+                 * get_customer_bookings()
+                 */
+
+                const feedbackId =
+                    b.feedback_id || b.Feedback_ID;
+
+                const feedbackRating =
+                    b.feedback_rating || b.Feedback_Rating;
+
+                const feedbackComments =
+                    b.feedback_comments || b.Feedback_Comments;
+
+                const feedbackDate =
+                    b.feedback_date || b.Feedback_Date;
+
+
+                const badgeClass =
+                    `badge-${status.toLowerCase().replace('_', '')}`;
+
+
+                /*
+                 * If review exists:
+                 *
+                 *     View Review
+                 *
+                 * Otherwise:
+                 *
+                 *     Rate
+                 */
+
+                let reviewButton = '';
+
+
+                if (feedbackId) {
+
+                    reviewButton = `
+                        <button
+                            class="btn btn-outline btn-sm"
+                            onclick='openViewReviewModal(
+                                ${JSON.stringify(feedbackRating)},
+                                ${JSON.stringify(feedbackComments)},
+                                ${JSON.stringify(feedbackDate)}
+                            )'
+                        >
+                            ✓ View Review
+                        </button>
+                    `;
+
+                } else if (status === 'CHECKED_OUT') {
+
+                    // Reviews are only accepted for completed stays
+                    reviewButton = `
+                        <button
+                            class="btn btn-outline btn-sm"
+                            onclick="openFeedbackModal(${bid})"
+                        >
+                            Rate
+                        </button>
+                    `;
+
+                }
+
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            <strong>#${bid}</strong>
+                        </td>
+
+
+                        <td>
+
+                            <strong>
+                                Room ${roomNum}
+                            </strong>
+
+                            <br/>
+
+                            <span
+                                style="
+                                    font-size:0.8rem;
+                                    color:var(--color-text-muted);
+                                "
+                            >
+                                ${roomType}
+                            </span>
+
+                        </td>
+
+
+                        <td>
+                            ${checkIn} → ${checkOut}
+                        </td>
+
+
+                        <td>
+                            <strong>
+                                $${Number(total).toFixed(2)}
+                            </strong>
+                        </td>
+
+
+                        <td>
+
+                            <span
+                                class="badge ${badgeClass}"
+                            >
+                                ${status}
+                            </span>
+
+                        </td>
+
+
+                        <td>
+
+                            <a
+                                href="/invoice/${bid}"
+                                class="btn btn-dark btn-sm"
+                                target="_blank"
+                            >
+                                View Folio
+                            </a>
+
+                        </td>
+
+
+                        <td>
+
+                            <div
+                                style="
+                                    display:flex;
+                                    gap:8px;
+                                    flex-wrap:wrap;
+                                "
+                            >
+
+                                ${
+                                    status === 'CONFIRMED'
+                                    ?
+                                    `
+                                        <button
+                                            class="btn btn-danger btn-sm"
+                                            onclick="cancelBooking(${bid})"
+                                        >
+                                            Cancel
+                                        </button>
+                                    `
+                                    :
+                                    ''
+                                }
+
+
+                                ${reviewButton}
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            });
+
+
+            tbody.innerHTML = html;
+
+
+        } catch (err) {
+
+            tbody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="7"
+                        style="
+                            text-align:center;
+                            color:var(--color-danger);
+                            padding:24px;
+                        "
+                    >
+                        Failed to load bookings:
+                        ${err.message}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+
+    }
+
+
+
+    /* =========================================================
+       CANCEL BOOKING
+       ========================================================= */
+
+    async function cancelBooking(bookingId) {
+
+        if (
+            !confirm(
+                `Are you sure you wish to cancel reservation #${bookingId}? Historical records will be preserved.`
+            )
+        ) {
+            return;
+        }
+
+
+        try {
+
+            const resp =
+                await apiRequest(
+                    `/api/bookings/${bookingId}/cancel`,
+                    {
+                        method: 'POST'
+                    }
+                );
+
+
+            showToast(
+                resp.message,
+                'success'
+            );
+
+
+            loadMyBookings();
+
+
+        } catch (err) {
+
+            showToast(
+                err.message,
+                'error'
+            );
+
+        }
+
+    }
+
+
+
+    /* =========================================================
+       OPEN SUBMIT REVIEW MODAL
+       ========================================================= */
+
+    function openFeedbackModal(bookingId) {
+
+        document.getElementById(
+            'fb-booking-id'
+        ).value = bookingId;
+
+
+        /*
+         * Reset form whenever the modal opens
+         */
+
+        document.getElementById(
+            'fb-rating'
+        ).value = '5';
+
+
+        document.getElementById(
+            'fb-comments'
+        ).value = '';
+
+
+        openModal(
+            'feedback-modal'
+        );
+
+    }
+
+
+
+    /* =========================================================
+       OPEN VIEW REVIEW MODAL
+       ========================================================= */
+
+    function openViewReviewModal(
+        rating,
+        comments,
+        feedbackDate
+    ) {
+
+        /*
+         * Display stars
+         */
+
+        const stars =
+            '★'.repeat(Number(rating)) +
+            '☆'.repeat(5 - Number(rating));
+
+
+        document.getElementById(
+            'view-review-rating'
+        ).textContent =
+            `${stars} (${rating}/5)`;
+
+
+        /*
+         * Display comments safely
+         */
+
+        document.getElementById(
+            'view-review-comments'
+        ).textContent =
+            comments || 'No comments provided.';
+
+
+        /*
+         * Display submission date
+         */
+
+        document.getElementById(
+            'view-review-date'
+        ).textContent =
+            feedbackDate || 'Date not available';
+
+
+        openModal(
+            'view-review-modal'
+        );
+
+    }
+
+
+
+    /* =========================================================
+       SUBMIT REVIEW
+       ========================================================= */
+
+    document
+        .getElementById('feedback-form')
+        .addEventListener(
+            'submit',
+            async (e) => {
+
+                e.preventDefault();
+
+
+                const bid =
+                    document.getElementById(
+                        'fb-booking-id'
+                    ).value;
+
+
+                const rating =
+                    document.getElementById(
+                        'fb-rating'
+                    ).value;
+
+
+                const comments =
+                    document.getElementById(
+                        'fb-comments'
+                    ).value;
+
+
+                try {
+
+                    const resp =
+                        await apiRequest(
+                            '/api/feedback',
+                            {
+                                method: 'POST',
+
+                                body: {
+                                    booking_id: bid,
+                                    rating: rating,
+                                    comments: comments
+                                }
+                            }
+                        );
+
+
+                    showToast(
+                        resp.message,
+                        'success'
+                    );
+
+
+                    closeModal(
+                        'feedback-modal'
+                    );
+
+
+                    /*
+                     * Reload bookings so
+                     *
+                     * Rate
+                     *
+                     * immediately changes to
+                     *
+                     * ✓ View Review
+                     */
+
+                    await loadMyBookings();
+
+
+                } catch (err) {
+
+                    showToast(
+                        err.message,
+                        'error'
+                    );
+
+                }
+
+            }
+        );
+
+
+
+    /* =========================================================
+       PAGE LOAD
+       ========================================================= */
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        loadMyBookings
+    );
+
+</script>
+
+{% endblock %}

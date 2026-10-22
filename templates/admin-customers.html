@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Guest Accounts & Profiles | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <div class="sidebar-title">Hotel Control Center</div>
+        <ul class="admin-menu">
+            <li class="admin-menu-item"><a href="/admin/dashboard">📊 Dashboard KPIs</a></li>
+            <li class="admin-menu-item"><a href="/admin/rooms">🏨 Rooms & Suites</a></li>
+            <li class="admin-menu-item"><a href="/admin/bookings">📅 Reservations</a></li>
+            <li class="admin-menu-item active"><a href="/admin/customers">👥 Guest Profiles</a></li>
+            <li class="admin-menu-item"><a href="/admin/services">🛎️ Hotel Services</a></li>
+            <li class="admin-menu-item"><a href="/admin/reports">📈 Reports & Views</a></li>
+            <li class="admin-menu-item"><a href="/admin/search-insights">🔍 Search Insights</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+            <div>
+                <h1 style="font-size:2rem; margin-bottom:4px;">Guest Directory & Loyalty</h1>
+                <p style="color:var(--color-text-muted); font-size:0.95rem;">Customer accounts, lifetime bookings, and aggregated expenditures.</p>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <h3>Registered Guests (Table: CUSTOMER)</h3>
+                <span class="badge badge-available">Grouped Lifetime Aggregates</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Customer ID</th>
+                            <th>Full Name</th>
+                            <th>Contact Email</th>
+                            <th>Phone</th>
+                            <th>Account Role</th>
+                            <th>Stays Completed</th>
+                            <th>Lifetime Spend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-customers-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:32px;">Loading customer accounts...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+<script>
+    async function loadCustomers() {
+        const tbody = document.getElementById('admin-customers-tbody');
+        try {
+            const resp = await apiRequest('/api/admin/customers');
+            const custs = resp.customers;
+            let html = '';
+            custs.forEach(c => {
+                const cid = c.customer_id || c.Customer_ID;
+                const name = c.name || c.Name;
+                const email = c.email || c.Email;
+                const phone = c.phone || c.Phone;
+                const role = c.role || c.Role;
+                const stays = c.total_bookings || c.Total_Bookings || 0;
+                const spent = c.total_spent || c.Total_Spent || 0;
+
+                html += `
+                    <tr>
+                        <td><strong>CUST-${cid}</strong></td>
+                        <td><strong>${name}</strong></td>
+                        <td>${email}</td>
+                        <td>${phone}</td>
+                        <td><span class="badge ${role === 'ADMIN' ? 'badge-occupied' : 'badge-available'}">${role}</span></td>
+                        <td>${stays} stays</td>
+                        <td style="font-weight:700; color:var(--color-accent-hover);">$${Number(spent).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="7" style="color:var(--color-danger); text-align:center; padding:24px;">Failed to load customers: ${err.message}</td></tr>`;
+        }
+    }
+    document.addEventListener('DOMContentLoaded', loadCustomers);
+</script>
+{% endblock %}
