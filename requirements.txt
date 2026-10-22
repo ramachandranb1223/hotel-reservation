@@ -1,0 +1,7 @@
+Flask>=3.0.0
+python-dotenv>=1.0.0
+werkzeug>=3.0.0
+oracledb>=2.0.0
+
+# Vector database - semantic search over guest reviews
+chromadb>=0.5.0

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Rooms & Inventory Management | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <!-- Admin Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-title">Hotel Control Center</div>
+        <ul class="admin-menu">
+            <li class="admin-menu-item"><a href="/admin/dashboard">📊 Dashboard KPIs</a></li>
+            <li class="admin-menu-item active"><a href="/admin/rooms">🏨 Rooms & Suites</a></li>
+            <li class="admin-menu-item"><a href="/admin/bookings">📅 Reservations</a></li>
+            <li class="admin-menu-item"><a href="/admin/customers">👥 Guest Profiles</a></li>
+            <li class="admin-menu-item"><a href="/admin/services">🛎️ Hotel Services</a></li>
+            <li class="admin-menu-item"><a href="/admin/reports">📈 Reports & Views</a></li>
+            <li class="admin-menu-item"><a href="/admin/search-insights">🔍 Search Insights</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+            <div>
+                <h1 style="font-size:2rem; margin-bottom:4px;">Physical Room Inventory</h1>
+                <p style="color:var(--color-text-muted); font-size:0.95rem;">Manage room statuses, nightly pricing rates, and inventory categories.</p>
+            </div>
+            <div style="display:flex; gap:12px;">
+                <button class="btn btn-primary btn-sm" onclick="openModal('add-room-modal')">+ Add New Room</button>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <h3>Hotel Rooms (Table: ROOM)</h3>
+                <span class="badge badge-available">20 Verified Inventory Units</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Room #</th>
+                            <th>Floor</th>
+                            <th>Category</th>
+                            <th>Price / Night</th>
+                            <th>Current Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-rooms-tbody">
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding:32px;">Loading room inventory...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Add Room Modal -->
+<div id="add-room-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">Add Physical Room to Inventory</h3>
+            <button class="modal-close" onclick="closeModal('add-room-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="add-room-form">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <div class="input-group">
+                        <label for="new-room-number">Room Number *</label>
+                        <input type="text" id="new-room-number" class="input-control" placeholder="e.g. 501" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="new-room-floor">Floor Number *</label>
+                        <input type="number" id="new-room-floor" class="input-control" value="5" min="1" max="50" required />
+                    </div>
+                </div>
+
+                <div class="input-group" style="margin-bottom:16px;">
+                    <label for="new-room-type">Room Category *</label>
+                    <select id="new-room-type" class="input-control" required>
+                        <option value="1">Deluxe Suite ($250)</option>
+                        <option value="2">Executive Business Room ($320)</option>
+                        <option value="3">Presidential Ocean Suite ($650)</option>
+                        <option value="4">Royal Garden Villa ($520)</option>
+                        <option value="5">Classic Heritage Room ($180)</option>
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+                    <div class="input-group">
+                        <label for="new-room-price">Price Per Night (USD) *</label>
+                        <input type="number" step="0.01" id="new-room-price" class="input-control" value="280.00" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="new-room-status">Initial Status</label>
+                        <select id="new-room-status" class="input-control">
+                            <option value="AVAILABLE">AVAILABLE</option>
+                            <option value="MAINTENANCE">MAINTENANCE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;">Insert Room</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Room Modal -->
+<div id="edit-room-modal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit Room Details</h3>
+            <button class="modal-close" onclick="closeModal('edit-room-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="edit-room-form">
+                <input type="hidden" id="edit-room-id" />
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                    <div class="input-group">
+                        <label for="edit-room-number">Room Number</label>
+                        <input type="text" id="edit-room-number" class="input-control" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="edit-room-floor">Floor</label>
+                        <input type="number" id="edit-room-floor" class="input-control" required />
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;">
+                    <div class="input-group">
+                        <label for="edit-room-price">Nightly Rate ($)</label>
+                        <input type="number" step="0.01" id="edit-room-price" class="input-control" required />
+                    </div>
+                    <div class="input-group">
+                        <label for="edit-room-status">Status</label>
+                        <select id="edit-room-status" class="input-control">
+                            <option value="AVAILABLE">AVAILABLE</option>
+                            <option value="OCCUPIED">OCCUPIED</option>
+                            <option value="MAINTENANCE">MAINTENANCE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/admin.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', loadAdminRooms);
+
+    document.getElementById('add-room-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const resp = await apiRequest('/api/admin/rooms', {
+                method: 'POST',
+                body: {
+                    room_number: document.getElementById('new-room-number').value,
+                    floor: document.getElementById('new-room-floor').value,
+                    room_type_id: document.getElementById('new-room-type').value,
+                    price_per_night: document.getElementById('new-room-price').value,
+                    status: document.getElementById('new-room-status').value
+                }
+            });
+            showToast(resp.message, 'success');
+            closeModal('add-room-modal');
+            loadAdminRooms();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+
+    function openEditRoomModal(id, rnum, floor, price, status) {
+        document.getElementById('edit-room-id').value = id;
+        document.getElementById('edit-room-number').value = rnum;
+        document.getElementById('edit-room-floor').value = floor;
+        document.getElementById('edit-room-price').value = price;
+        document.getElementById('edit-room-status').value = status;
+        openModal('edit-room-modal');
+    }
+
+    document.getElementById('edit-room-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const rid = document.getElementById('edit-room-id').value;
+        try {
+            const resp = await apiRequest(`/api/admin/rooms/${rid}`, {
+                method: 'PUT',
+                body: {
+                    room_number: document.getElementById('edit-room-number').value,
+                    floor: document.getElementById('edit-room-floor').value,
+                    room_type_id: 1, // preserve category
+                    price_per_night: document.getElementById('edit-room-price').value,
+                    status: document.getElementById('edit-room-status').value
+                }
+            });
+            showToast(resp.message, 'success');
+            closeModal('edit-room-modal');
+            loadAdminRooms();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    });
+</script>
+{% endblock %}

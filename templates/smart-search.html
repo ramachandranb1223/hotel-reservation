@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Find Your Stay | Grand Luxe Hotel{% endblock %}
+
+{% block content %}
+<section style="background: linear-gradient(rgba(11, 19, 43, 0.88), rgba(11, 19, 43, 0.95)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80') center/cover; padding: 64px 0; color: white;">
+    <div class="container text-center">
+        <div class="section-tag">Concierge</div>
+        <h1 class="section-title" style="color:white;">Find Your Stay</h1>
+        <p class="section-desc" style="color:#cbd5e1; margin-bottom:0;">
+            Tell us what matters to you and we'll point you to the right suite &mdash;
+            and show you what guests who stayed there had to say.
+        </p>
+    </div>
+</section>
+
+<!-- Room finder -->
+<section style="padding: 56px 0 40px;">
+    <div class="container">
+        <div class="text-center" style="max-width:720px; margin:0 auto 32px;">
+            <div class="section-tag">Your Ideal Room</div>
+            <h2 class="section-title" style="font-size:1.9rem;">Describe what you're looking for</h2>
+            <p class="section-desc">
+                In your own words &mdash; a quiet room to work from, somewhere special for an
+                anniversary, space for the family.
+            </p>
+        </div>
+
+        <form id="room-match-form" style="max-width:720px; margin:0 auto 20px; display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
+            <div class="input-group" style="flex:1 1 380px;">
+                <label for="room-query">What would make this stay right for you?</label>
+                <input type="text" id="room-query" class="input-control"
+                       placeholder="a quiet room with a view where I can work" required />
+            </div>
+            <button type="submit" class="btn btn-primary" style="height:48px;">Find My Room</button>
+        </form>
+
+        <div class="text-center" style="margin-bottom:32px;">
+            <span style="font-size:0.85rem; color:#64748b; margin-right:6px;">Popular:</span>
+            <button type="button" class="btn btn-outline btn-sm preset-room" style="margin:3px;">a romantic weekend away</button>
+            <button type="button" class="btn btn-outline btn-sm preset-room" style="margin:3px;">space for the whole family</button>
+            <button type="button" class="btn btn-outline btn-sm preset-room" style="margin:3px;">somewhere quiet to work</button>
+        </div>
+
+        <div id="room-match-results" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>
+    </div>
+</section>
+
+<!-- Guest reviews -->
+<section style="padding: 40px 0 64px; background:#f8fafc;">
+    <div class="container">
+        <div class="text-center" style="max-width:720px; margin:0 auto 32px;">
+            <div class="section-tag">Guest Reviews</div>
+            <h2 class="section-title" style="font-size:1.9rem;">What guests are saying</h2>
+            <p class="section-desc">
+                Ask about anything &mdash; the food, the spa, how easy it was to change plans.
+            </p>
+        </div>
+
+        <form id="review-form" style="max-width:720px; margin:0 auto 20px; display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
+            <div class="input-group" style="flex:1 1 380px;">
+                <label for="review-query">Ask about your stay</label>
+                <input type="text" id="review-query" class="input-control"
+                       placeholder="was the food any good?" required />
+            </div>
+            <button type="submit" class="btn btn-primary" style="height:48px;">Ask</button>
+        </form>
+
+        <div class="text-center" style="margin-bottom:32px;">
+            <span style="font-size:0.85rem; color:#64748b; margin-right:6px;">Try:</span>
+            <button type="button" class="btn btn-outline btn-sm preset-review" style="margin:3px;">was the food any good</button>
+            <button type="button" class="btn btn-outline btn-sm preset-review" style="margin:3px;">how was the spa</button>
+            <button type="button" class="btn btn-outline btn-sm preset-review" style="margin:3px;">is it good for business travel</button>
+            <button type="button" class="btn btn-outline btn-sm preset-review" style="margin:3px;">easy to change my plans</button>
+        </div>
+
+        <div id="review-results" style="max-width:860px; margin:0 auto; display:grid; gap:16px;"></div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const escapeHtml = (str) => String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+const UNAVAILABLE = 'Search is temporarily unavailable. Please try again shortly.';
+
+function notice(message) {
+    return `<div style="background:#f1f5f9; border:1px solid var(--color-border); padding:20px;
+                        border-radius:10px; text-align:center; color:#64748b;">${escapeHtml(message)}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Room finder
+// ---------------------------------------------------------------------------
+async function findRooms(query) {
+    const container = document.getElementById('room-match-results');
+    container.innerHTML = notice('Looking for your room…');
+
+    try {
+        const res = await fetch(`/api/semantic/rooms?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if (!data.success) { container.innerHTML = notice(UNAVAILABLE); return; }
+        if (!data.matches.length) {
+            container.innerHTML = notice("We couldn't find a match for that. Try describing it another way.");
+            return;
+        }
+
+        container.innerHTML = data.matches.map((m, i) => {
+            const meta = m.metadata || {};
+            const badge = i === 0
+                ? `<span style="background:var(--color-accent, #c9a227); color:white; padding:3px 10px;
+                          border-radius:999px; font-size:0.72rem; font-weight:700; letter-spacing:0.03em;">BEST MATCH</span>`
+                : '';
+            return `
+                <div style="background:white; border:1px solid var(--color-border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column;">
+                    ${meta.image_url ? `<div style="height:150px; background:url('${escapeHtml(meta.image_url)}') center/cover;"></div>` : ''}
+                    <div style="padding:20px; display:flex; flex-direction:column; flex-grow:1;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                            <h3 style="margin:0; font-size:1.1rem;">${escapeHtml(meta.type_name)}</h3>
+                            ${badge}
+                        </div>
+                        <p style="font-size:0.88rem; color:#475569; line-height:1.55; margin:0 0 14px; flex-grow:1;">
+                            ${escapeHtml(m.text).slice(0, 165)}&hellip;
+                        </p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; padding-top:12px;">
+                            <span style="font-size:0.85rem; color:#64748b;">Sleeps ${escapeHtml(meta.max_occupancy)}</span>
+                            <strong style="color:var(--color-primary, #0b132b);">$${escapeHtml(meta.base_price)}<span style="font-weight:400; font-size:0.8rem; color:#64748b;">/night</span></strong>
+                        </div>
+                        <a href="/booking" class="btn btn-primary btn-sm" style="margin-top:14px; text-align:center;">Check Availability</a>
+                    </div>
+                </div>`;
+        }).join('');
+    } catch (err) {
+        container.innerHTML = notice(UNAVAILABLE);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Guest reviews
+// ---------------------------------------------------------------------------
+async function askReviews(query) {
+    const container = document.getElementById('review-results');
+    container.innerHTML = notice('Reading guest reviews…');
+
+    try {
+        const res = await fetch(`/api/semantic/reviews?q=${encodeURIComponent(query)}&limit=4`);
+        const data = await res.json();
+
+        if (!data.success) { container.innerHTML = notice(UNAVAILABLE); return; }
+        if (!data.results.length) {
+            container.innerHTML = notice("No guest has mentioned that yet.");
+            return;
+        }
+
+        container.innerHTML = data.results.map(r => {
+            const meta = r.metadata || {};
+            const stars = '&#9733;'.repeat(Number(meta.rating) || 0) +
+                          `<span style="color:#cbd5e1;">${'&#9733;'.repeat(5 - (Number(meta.rating) || 0))}</span>`;
+            return `
+                <div style="background:white; border:1px solid var(--color-border); border-radius:12px; padding:22px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap;">
+                        <strong style="font-size:0.95rem;">${escapeHtml(meta.customer_name || 'Guest')}</strong>
+                        <span style="font-size:0.8rem; color:#64748b;">${escapeHtml(meta.room_type || '')}</span>
+                    </div>
+                    <div style="color:#f59e0b; font-size:0.85rem; margin-bottom:10px;">${stars}</div>
+                    <p style="font-size:0.95rem; color:#334155; margin:0; line-height:1.6;">&ldquo;${escapeHtml(r.text)}&rdquo;</p>
+                </div>`;
+        }).join('');
+    } catch (err) {
+        container.innerHTML = notice(UNAVAILABLE);
+    }
+}
+
+// ---------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('room-match-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        findRooms(document.getElementById('room-query').value.trim());
+    });
+    document.getElementById('review-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        askReviews(document.getElementById('review-query').value.trim());
+    });
+    document.querySelectorAll('.preset-room').forEach(btn => btn.addEventListener('click', () => {
+        const q = btn.textContent.trim();
+        document.getElementById('room-query').value = q;
+        findRooms(q);
+    }));
+    document.querySelectorAll('.preset-review').forEach(btn => btn.addEventListener('click', () => {
+        const q = btn.textContent.trim();
+        document.getElementById('review-query').value = q;
+        askReviews(q);
+    }));
+});
+</script>
+{% endblock %}

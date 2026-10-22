@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables / secrets
+.env
+
+# SQLite database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python test/cache
+.pytest_cache/
+.coverage
+
+# Logs
+*.log
+
+# Chroma vector index - regenerate with: python build_vector_index.py
+vector_store/
+
+# Virtual environment (also covers one created in the parent folder)
+.venv/
+../.venv/

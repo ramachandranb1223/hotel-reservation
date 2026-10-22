@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Search Insights | Admin | Grand Luxe{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+    <aside class="admin-sidebar">
+        <div class="sidebar-title">Hotel Control Center</div>
+        <ul class="admin-menu">
+            <li class="admin-menu-item"><a href="/admin/dashboard">📊 Dashboard KPIs</a></li>
+            <li class="admin-menu-item"><a href="/admin/rooms">🏨 Rooms & Suites</a></li>
+            <li class="admin-menu-item"><a href="/admin/bookings">📅 Reservations</a></li>
+            <li class="admin-menu-item"><a href="/admin/customers">👥 Guest Profiles</a></li>
+            <li class="admin-menu-item"><a href="/admin/services">🛎️ Hotel Services</a></li>
+            <li class="admin-menu-item"><a href="/admin/reports">📈 Reports & Views</a></li>
+            <li class="admin-menu-item active"><a href="/admin/search-insights">🔍 Search Insights</a></li>
+        </ul>
+    </aside>
+
+    <main class="admin-main">
+        <div style="margin-bottom:28px;">
+            <h1 style="font-size:2rem; margin-bottom:4px;">Search Insights</h1>
+            <p style="color:var(--color-text-muted); font-size:0.95rem; max-width:760px;">
+                Runs one query through both search engines side by side: Oracle's relational
+                <code>LIKE</code> match, and the vector index behind the guest concierge.
+            </p>
+        </div>
+
+        <div style="background:#f8fafc; border:1px solid var(--color-border); border-radius:var(--radius-md); padding:14px 18px; margin-bottom:28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div id="index-status" style="font-size:0.9rem; color:#475569;">Checking index&hellip;</div>
+            <button id="rebuild-index-btn" class="btn btn-outline btn-sm">Rebuild Index</button>
+        </div>
+
+        <form id="compare-form" style="display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin-bottom:16px;">
+            <div class="input-group" style="flex:1 1 380px;">
+                <label for="compare-query">Test query</label>
+                <input type="text" id="compare-query" class="input-control"
+                       placeholder="somewhere peaceful to get work done" required />
+            </div>
+            <button type="submit" class="btn btn-primary" style="height:48px;">Run Comparison</button>
+        </form>
+
+        <div style="margin-bottom:32px;">
+            <span style="font-size:0.85rem; color:#64748b; margin-right:8px;">Sample queries:</span>
+            <button type="button" class="btn btn-outline btn-sm preset" style="margin:3px;">was the food any good</button>
+            <button type="button" class="btn btn-outline btn-sm preset" style="margin:3px;">somewhere peaceful to get work done</button>
+            <button type="button" class="btn btn-outline btn-sm preset" style="margin:3px;">romantic getaway</button>
+            <button type="button" class="btn btn-outline btn-sm preset" style="margin:3px;">easy to change my plans</button>
+            <button type="button" class="btn btn-outline btn-sm preset" style="margin:3px;">relaxing treatment</button>
+        </div>
+
+        <div id="results" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px;"></div>
+
+        <div style="margin-top:36px; background:#f8fafc; border-left:4px solid var(--color-accent, #c9a227); padding:20px 24px; border-radius:8px;">
+            <h3 style="margin:0 0 10px; font-size:1rem;">How to read this</h3>
+            <p style="margin:0 0 8px; font-size:0.9rem; color:#475569; line-height:1.6;">
+                <strong>Relational search</strong> matches characters. A review only appears if it
+                literally contains the typed string, and results come back unranked.
+            </p>
+            <p style="margin:0; font-size:0.9rem; color:#475569; line-height:1.6;">
+                <strong>Vector search</strong> compares meaning. Each review is stored as a
+                384-dimension embedding, and the query returns its nearest neighbours by cosine
+                distance &mdash; so a review about "remote meetings" surfaces for "somewhere to work"
+                despite sharing no words. The percentage is relative closeness, not a confidence score.
+            </p>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const escapeHtml = (str) => String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+async function loadStatus() {
+    const el = document.getElementById('index-status');
+    try {
+        const res = await fetch('/api/admin/search/status');
+        const { status = {} } = await res.json();
+
+        if (!status.available) {
+            el.innerHTML = `<strong style="color:#b45309;">Unavailable</strong> &mdash; ${escapeHtml(status.error)}`;
+        } else if (!status.built) {
+            el.innerHTML = `<strong style="color:#b45309;">Index empty</strong> &mdash; run <code>python build_vector_index.py</code>`;
+        } else {
+            const parts = Object.entries(status.collections)
+                .map(([n, c]) => `${escapeHtml(n)}: <strong>${c}</strong>`).join(' &nbsp;&middot;&nbsp; ');
+            el.innerHTML = `<span style="color:#15803d;">&#9679;</span> Index ready &mdash; ${parts}`;
+        }
+    } catch { el.textContent = 'Could not reach the index.'; }
+}
+
+function panel(title, subtitle, results, { showScore = false, accent = '#64748b' } = {}) {
+    const body = !results.length
+        ? `<div style="padding:28px 16px; text-align:center; color:#94a3b8; font-style:italic;">
+               No rows returned.</div>`
+        : results.map(r => {
+            const meta = r.metadata || {};
+            const score = showScore && r.similarity !== null
+                ? `<span style="background:${accent}; color:white; padding:2px 9px; border-radius:999px;
+                          font-size:0.75rem; font-weight:600;">${r.similarity}%</span>` : '';
+            return `
+                <div style="padding:14px 0; border-bottom:1px solid #e2e8f0;">
+                    <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px;">
+                        <strong style="font-size:0.9rem;">${escapeHtml(meta.customer_name || 'Guest')}</strong>
+                        ${score}
+                    </div>
+                    <div style="color:#f59e0b; font-size:0.8rem; margin-bottom:6px;">${'&#9733;'.repeat(Number(meta.rating) || 0)}</div>
+                    <p style="font-size:0.9rem; color:#475569; margin:0; line-height:1.5;">${escapeHtml(r.text)}</p>
+                </div>`;
+        }).join('');
+
+    return `
+        <div style="background:white; border:1px solid var(--color-border); border-radius:12px; overflow:hidden;">
+            <div style="padding:16px 20px; border-bottom:2px solid ${accent}; background:#fbfcfe;">
+                <h3 style="margin:0; font-size:1.05rem;">${title}</h3>
+                <p style="margin:4px 0 0; font-size:0.8rem; color:#64748b;">${subtitle}</p>
+            </div>
+            <div style="padding:4px 20px 16px;">${body}</div>
+        </div>`;
+}
+
+async function runCompare(query) {
+    const el = document.getElementById('results');
+    el.innerHTML = `<p style="color:#64748b;">Running&hellip;</p>`;
+    try {
+        const res = await fetch(`/api/admin/search/compare?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (!data.success) {
+            el.innerHTML = `<div style="background:#fef3c7; border-left:4px solid #f59e0b; padding:16px;
+                                 border-radius:8px; color:#92400e;">${escapeHtml(data.error)}</div>`;
+            return;
+        }
+        el.innerHTML =
+            panel('Oracle &mdash; relational <code>LIKE</code>', 'Literal substring match, unranked.',
+                  data.keyword_results, { accent: '#94a3b8' }) +
+            panel('Chroma &mdash; vector similarity', 'Nearest neighbours by meaning, ranked.',
+                  data.semantic_results, { showScore: true, accent: 'var(--color-accent, #c9a227)' });
+    } catch (err) {
+        el.innerHTML = `<p style="color:#b91c1c;">Request failed: ${escapeHtml(err.message)}</p>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadStatus();
+    document.getElementById('compare-form').addEventListener('submit', e => {
+        e.preventDefault();
+        runCompare(document.getElementById('compare-query').value.trim());
+    });
+    document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => {
+        const q = b.textContent.trim();
+        document.getElementById('compare-query').value = q;
+        runCompare(q);
+    }));
+    document.getElementById('rebuild-index-btn').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true; btn.textContent = 'Rebuilding...';
+        try {
+            const res = await fetch('/api/admin/search/rebuild', { method: 'POST' });
+            const data = await res.json();
+            alert(data.success ? data.message : data.error);
+            loadStatus();
+        } finally { btn.disabled = false; btn.textContent = 'Rebuild Index'; }
+    });
+});
+</script>
+{% endblock %}

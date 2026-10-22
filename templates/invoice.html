@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Invoice Folio #{{ booking.invoice.invoice_id or booking.invoice.Invoice_ID or booking.booking_id }} | Grand Luxe Hotel</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { background-color: #e2e8f0; }
+        .btn-print {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print btn-print">
+        <button class="btn btn-primary" onclick="window.print()">🖨 Print / Save PDF</button>
+        <a href="/my-bookings" class="btn btn-dark" style="margin-left:8px;">Back to Dashboard</a>
+    </div>
+
+    <div class="invoice-container">
+        <!-- Header -->
+        <div class="invoice-header">
+            <div>
+                <div class="brand-logo" style="margin-bottom:8px;">
+                    <div class="logo-crown">♔</div>
+                    <div class="brand-text" style="color:var(--color-primary-dark);">GRAND <span style="color:var(--color-accent);">LUXE</span></div>
+                </div>
+                <div style="font-size:0.85rem; color:var(--color-text-muted); line-height:1.5;">
+                    Grand Luxe Resort & Towers, Penthouse Level<br/>
+                    100 Oceanfront Promenade, Coastal District<br/>
+                    Tel: +1 (800) 555-LUXE • concierge@grandluxe.com
+                </div>
+            </div>
+
+            <div style="text-align:right;">
+                <h2 style="font-size:1.8rem; color:var(--color-primary); letter-spacing:1px; margin-bottom:4px;">GUEST FOLIO / INVOICE</h2>
+                <div style="font-size:0.9rem; color:var(--color-text-muted);">
+                    Invoice #: <strong>INV-{{ booking.invoice.invoice_id or booking.invoice.Invoice_ID or (booking.booking_id + 8000) }}</strong><br/>
+                    Date: {{ booking.invoice.invoice_date or booking.invoice.Invoice_Date or booking.booking_date or booking.Booking_Date }}<br/>
+                    Status: <span class="badge badge-paid" style="margin-top:4px;">{{ booking.invoice.payment_status or booking.invoice.Payment_Status or 'PAID' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meta Grid -->
+        <div class="invoice-meta-grid">
+            <div>
+                <h4 style="font-size:0.85rem; text-transform:uppercase; color:var(--color-accent-hover); letter-spacing:1px; margin-bottom:8px;">Billed To (Guest Particulars)</h4>
+                <div style="font-size:0.95rem; font-weight:700; color:var(--color-primary);">{{ booking.customer_name or booking.Customer_Name }}</div>
+                <div style="font-size:0.85rem; color:var(--color-text-muted); line-height:1.6;">
+                    Email: {{ booking.customer_email or booking.Customer_Email }}<br/>
+                    Phone: {{ booking.customer_phone or booking.Customer_Phone }}<br/>
+                    Customer ID: CUST-{{ booking.customer_id or booking.Customer_ID }}
+                </div>
+            </div>
+
+            <div>
+                <h4 style="font-size:0.85rem; text-transform:uppercase; color:var(--color-accent-hover); letter-spacing:1px; margin-bottom:8px;">Reservation Information</h4>
+                <div style="font-size:0.85rem; color:var(--color-text-muted); line-height:1.6;">
+                    Reservation ID: <strong>#{{ booking.booking_id or booking.Booking_ID }}</strong><br/>
+                    Accommodation: <strong>{{ booking.room_type or booking.Room_Type }}</strong> (Room {{ booking.room_number or booking.Room_Number }}, Floor {{ booking.floor or booking.Floor }})<br/>
+                    Check-In Date: <strong>{{ booking.check_in_date or booking.Check_In_Date }}</strong><br/>
+                    Check-Out Date: <strong>{{ booking.check_out_date or booking.Check_Out_Date }}</strong><br/>
+                    Registered Guests: {{ booking.no_of_guests or booking.No_Of_Guests }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Itemized Charges Table -->
+        <table class="custom-table" style="margin-top:24px;">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th style="text-align:center;">Qty / Nights</th>
+                    <th style="text-align:right;">Unit Price</th>
+                    <th style="text-align:right;">Amount (USD)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Room Accommodation Line Item -->
+                <tr>
+                    <td>
+                        <strong>{{ booking.room_type or booking.Room_Type }} Stay</strong>
+                        <div style="font-size:0.8rem; color:var(--color-text-muted);">Room {{ booking.room_number or booking.Room_Number }}</div>
+                    </td>
+                    <td>Accommodation</td>
+                    <td style="text-align:center;">Stay Duration</td>
+                    <td style="text-align:right;">${{ booking.price_per_night or booking.Price_Per_Night }}</td>
+                    <td style="text-align:right; font-weight:700;">
+                        ${{ booking.invoice.room_charge or booking.invoice.Room_Charge or booking.total_amount or booking.Total_Amount }}
+                    </td>
+                </tr>
+
+                <!-- Services Line Items -->
+                {% for srv in booking.services %}
+                <tr>
+                    <td>
+                        <strong>{{ srv.service_name or srv.Service_Name }}</strong>
+                    </td>
+                    <td><span class="amenity-pill">{{ srv.category or srv.Category }}</span></td>
+                    <td style="text-align:center;">{{ srv.quantity or srv.Quantity }}</td>
+                    <td style="text-align:right;">${{ srv.price or srv.Price }}</td>
+                    <td style="text-align:right; font-weight:700;">${{ srv.service_amount or srv.Service_Amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Totals Calculation Box -->
+        <div class="invoice-total-box">
+            <div class="invoice-total-row">
+                <span>Room Charges:</span>
+                <strong>${{ booking.invoice.room_charge or booking.invoice.Room_Charge or booking.total_amount or booking.Total_Amount }}</strong>
+            </div>
+            <div class="invoice-total-row">
+                <span>Ancillary Services:</span>
+                <strong>${{ booking.invoice.service_charge or booking.invoice.Service_Charge or 0 }}</strong>
+            </div>
+            <div class="invoice-total-row">
+                <span>Hospitality GST & Tax (12%):</span>
+                <strong>${{ booking.invoice.tax_amount or booking.invoice.Tax_Amount or 0 }}</strong>
+            </div>
+            <div class="invoice-total-row grand-total">
+                <span>Total Amount:</span>
+                <span>${{ booking.invoice.total_amount or booking.invoice.Total_Amount or booking.total_amount or booking.Total_Amount }}</span>
+            </div>
+        </div>
+
+        <!-- Verification & Signature Block -->
+        <div style="margin-top:64px; display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid var(--color-border); padding-top:24px;">
+            <div style="font-size:0.8rem; color:var(--color-text-muted); max-width:400px;">
+                Thank you for choosing Grand Luxe Hotel. This computerized tax invoice is generated via stored PL/SQL procedure <code>SP_GENERATE_INVOICE</code> with transaction safety.
+            </div>
+            <div style="text-align:center;">
+                <div style="font-family:'Playfair Display', serif; font-size:1.4rem; color:var(--color-accent-hover); font-style:italic;">Arthur Pendelton</div>
+                <div style="border-top:1px solid #94a3b8; padding-top:4px; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:var(--color-text-muted);">
+                    General Manager Signature
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
