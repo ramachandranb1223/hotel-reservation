@@ -1,7 +1,15 @@
 # Smart Hotel Reservation and Booking Management System
-**College Database Systems Mini-Project (DA2 Academic Specification)**
+**College Database Systems Mini-Project (DA3 Academic Specification)**
 
 A complete, production-grade, 3-tier web application built with **HTML5/CSS3/Vanilla JavaScript**, **Python Flask**, and **Oracle Database (SQL & PL/SQL)**.
+
+## Team
+
+| Register No. | Name |
+|---|---|
+| 25BDS1223 | Ramachandran B |
+| 25BDS1226 | Pasuparthi Lakshmi Cherithesh |
+| 25BDS1232 | Sanjana Amudhan |
 
 ---
 
